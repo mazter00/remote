@@ -1,58 +1,71 @@
-; ^MRN^scrîptét v0.048
+; MRNscrîptét v0.058
+; Released 1
+; ID 1
+; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
 
-; This file is based on mIRC 5.82
-; It isn't yet optimimized for mIRC 5.9+
+; >>> TODO <<<
+; fikse cel for mellom 00 og 07
 
 ; >>> HISTORY <<<
-; v0.048 Fixed a bug in $pass and $pass2. Wouldn't create file if the dir didn't exists...
-; v0.047 Fixed a bug when counting build. Showed for example "build: 18" when it was in reality 180
-; v0.046 Fixed several bugs in missing variables
-; v0.045 Fixed bug in "set % MRN.b"
-; v0.044 Added "Last update" in "check for new version" thingy
-; v0.043 Added "delay" in autojoinlist.
-; v0.042 Now displays hours, instead of weeks. ( total used time on IRC )
-; v0.041 Fixed a bug in RemoteManager
-; v0.040 Improved autojoin dialog from 8 channels to 16 channels. Removed the "edit" buttons.
-; v0.039 Fixed bug in echo celius. Fixed some datething...
-; v0.038 Fixed bug in $pass and in $pass2
-; v0.037 Added $pass and $pass2 for more security. Only fixed some old coding as well.
-; v0.036 Tab "AutoJoin List" supports 8 channels and it has an "edit" button. Makes it easily add/edit new channels...
-; v0.035 Made dialog main to a tab'ed dialog. "Improved" the interface...
-; v0.034 Changed name of dialog. From test to main.
-; v0.033 Removed %MRN.dia? - I might have to add them again... Sorry for the back and forth. It isn't over yet either...
-; v0.032 Fixed bug in %host*2. Added an if sentence in %host*
-; v0.031 Changed $left from 5 to 6 in the MRNscore
-; v0.030 Fixed dialog cel. Works good now.
-; v0.029 Added dialog cel, instead of halting the whole script by using $?
-; v0.028 Fixed bug in "Du har vært på Inett"
-; v0.027 Added sock. Scripted in here because this is the main scriptfile of the ^MRN^scrîptét.
-; v0.026 Fixed bug in load. Removed the confirmation
-; v0.025 Made the buttons larger in dialog test. Also completed the unload button
-; v0.024 Changed from $round to $left in the MRNscore
-; v0.023 Added button unload?
-; v0.022 Added open dialog in menu status
-; v0.021 Fixed so alias listremote only search in $mircdirremote only
-; v0.020 Removed ID 13 - check Loaded?
-; v0.019 Added more dynamic. When you have loaded a file, the load-button will now be disabled.
-; v0.018 Added alias rensk.var to make the script look more clean. (I hope)
-; v0.017 Added load button which works! Added "INVALID" script message. Added dymamic $script(0) counter, after you loaded a script.
-; v0.016 Added $nopath in the dialog. When you sclick, it just add $mircdirremote\. works good
-; v0.015 Added "loaded?" in the dialog...
-; v0.014 Dialogs improved. It list all remotefiles and gives you the version of the file when/if you singelclick...
-; v0.013 Added %MRN.dia?...
-; v0.012 Fixed a possible bug in celsius thingy
-: v0.011 Added a very simple dialog that shows you the version of the script and how many scripts that are loaded.
-; v0.010 Added listremote in alpha version. I'm planning to make a "auto loader"
-; v0.009 Added celsius thingy
-; v0.008 Fixed %okconn
-; v0.007 Added "remember" thing
-; v0.006 Added menu status
-; v0.005 Added menu channel
-; v0.004 Removed @script.sjekk totally
-; v0.003 Added alias MRNscore
-; v0.002 Removed some @script.sjekk
-
-; ------------------------------------------------------------------------------------------------------
+; v0.058 Added timer todo. Reads a random line from todo.txt. If online, msg #tezt, if not, echo -a
+; v0.057 It now tells you what the next %celius, for a year ago, is and states the temprature as well.
+; v0.056 It now tells you what %celsius it was one year ago.
+; v0.055 Fixed a bold bug in %MRN.b, if %ac-1 is $null, then it makes #tezt as default channel. Also fixed colur bug in MRNversion output.
+; v0.054 Now counts build, ID and file only if the file is released. Fixed a bug in dialog cel. Tried to open the dialog, even if it was already open...
+; v0.053 Fixed a bug when counting build. Showed for example "build: 2" when it was in reality 200. Should be the last of those fixes.
+; v0.052 Fixed a serious bug in alias oper. It overruled when trying to get IRCop status.
+; v0.051 Fixed a bug in dialog main, did 4. If you deleted or moved a file while using the dialog, a $read occured.
+; v0.050 Fixed a possible bug in dialog main, did 2 and 3. IDs could be mssing, due to v0.042 update...
+; v0.049 Moved dialog cel to tempratur.ini
+; v0.048 Dialog perform added and support for /seenscan added
+; v0.047 Created upgrade.ini due to 30k limit for mIRC 5.82-
+; v0.046 Fixed bug in %celsius
+; v0.045 Fixed a bug regarding %dialog.main in "on dialog:main:init"
+; v0.044 Fixed a bug in random colors...
+; v0.043 Added some random colors in %MRN.logob
+; v0.042 Removed some unnecessary IDs in dialog main
+; v0.041 Added alias setup, to gather all those "if (%variabel == $null) { set %variabel yaddi }" in one place
+; v0.040 Added intervall check on $sock.connect
+; v0.039 Fixed a bug in $pass and $pass2. Wouldn't create file if the dir didn't exists...
+; v0.038 Fixed a bug when counting build. Showed for example "build: 18" when it was in reality 180
+; v0.037 Fixed several bugs in missing variables
+; v0.036 Fixed bug in "set % MRN.b"
+; v0.035 Added "Last update" in "check for new version" thingy
+; v0.034 Added "delay" in autojoinlist.
+; v0.033 Now displays hours, instead of weeks. ( total used time on IRC )
+; v0.032 Fixed a bug in RemoteManager
+; v0.031 Improved autojoin dialog from 8 channels to 16 channels. Removed the "edit" buttons.
+; v0.030 Fixed bug in echo celius. Fixed some date-thing...
+; v0.029 Fixed bug in $pass and in $pass2
+; v0.028 Added $pass and $pass2 for more security. Fixed some old coding as well.
+; v0.027 Tab "AutoJoin List" supports 8 channels and it has an "edit" button. Makes it easy to add/edit new channels...
+; v0.026 Made dialog main to a tab'ed dialog. "Improved" the interface...
+; v0.025 Changed name of dialog. From test to main.
+; v0.024 Fixed bug in %host*2. Added an if sentence in %host*
+; v0.023 Changed $left from 5 to 6 in the MRNscore
+; v0.022 Fixed dialog cel. Works good now.
+; v0.021 Added dialog cel, instead of halting the whole script by using $?
+; v0.020 Fixed bug in "Du har vært på Inett"
+; v0.019 Fixed bug in load. Removed the confirmation
+; v0.018 Made the buttons larger in dialog test. Also completed the unload button
+; v0.017 Changed from $round to $left in the MRNscore
+; v0.016 Added button "unload?"
+; v0.015 Added open dialog in menu status
+; v0.014 Fixed so alias listremote only search in $mircdirremote only
+; v0.013 Added more dynamic. When you have loaded a file, the load-button will now be disabled.
+; v0.012 Added alias rensk.var to make the script look more clean.
+; v0.011 Added load button which works! Added "INVALID" script message. Added dymamic $script(0) counter, after you loaded a script.
+; v0.010 Added $nopath in the dialog. When you sclick, it just add $mircdirremote\. works good
+; v0.009 Added "loaded?" in the dialog...
+; v0.008 Dialog test improved. It list all remotefiles and gives you the version of the file when/if you singelclick in the list
+; v0.007 Fixed a possible bug in celsius thingy
+: v0.006 Added a very simple dialog that shows you the version of the script and how many scripts that are loaded.
+; v0.005 Added listremote in alpha version. I'm planning to make a "auto loader"
+; v0.004 Added celsius thingy
+; v0.003 Added menu channel and menu status
+; v0.002 Added alias MRNscore
+; v0.001 Working version...
+; ---------------------------------------------------------------------------------------------------------------------------
 
 on *:START: { MRN.start }
 
@@ -60,20 +73,280 @@ alias MRN.start {
 
   var %start.up.ticks $ticks
 
-  if ($isdir($mircdirtemp) == $false) { mkdir $mircdirtemp }
-
   rensk.var
+  setup
+  tidtaker.system
+
+  ; %ctime.end needs to be set, because it is needed on the NEXT on start
+  set %ctime.end $calc(%ctime.connect + %on.tid.session)
+
+  ; Usikker på om disse må bli set
+  set %total.kostn $calc(%on.tid.totalt / 3600 * %Inett)
+  set %oppstarts.pris.kr $calc(%oppstarts.pris / 100 * %MRN.connect)
+  set %toty $calc(%total.kostn + %oppstarts.pris.kr)
+
+  ; Samle sammen variabler
+  var %ctime.old %ctime.now | set %ctime.now $ctime
+  var %nick.length $len($me)
+  var %celsius $celsius
+  var %diff $calc(%ctime.now - %ctime.end)
+  var %tall $calc(%on.tid.session / 3600 * %Inett)
+  var %todo %MRN.b $todo
+
+  ; Starte timers
+  ; .timerTODO 0 4000 { $!todo2 }
+  .timermp3checkget 0 60 { mp3.check.get }
 
   inc %MRN.start
 
-  var %ctime.old %ctime.now
-  set %ctime.now $ctime
-  set %okconn ja
+  if (%MRN.connect == $null) { var %MRN.connect $chr(36) $+ null }
 
-  ; Tidtaker system
+  echo Velkommen,2 $me $+ 1! 
+  echo $str(~,$calc(12+%nick.length))
+  echo %MRN.b Du har starta %MRN.logo $+ 2 %MRN.start ganger og har vært connecta2 %MRN.connect ganger
 
+  if ((%MRN.start isnum) && (%MRN.connect isnum)) {
+    var %a $calc(%MRN.start - %MRN.connect)
+    if (%a > 0) { echo %MRN.b Du har starta scriptet2 $calc(%MRN.start - %MRN.connect) ganger mer enn du har connecta deg }
+  }
+
+  echo %MRN.b
+  echo %MRN.b Sist gang du var connecta var;2 $asctime(%ctime.connect)
+  echo %MRN.b %MRN.space Fram til;2 $asctime(%ctime.end)
+  echo %MRN.b I dag er det:2 $asctime($ctime,dddd dd. mmmm yyyy) Klokka er:2 $asctime($ctime,HH:nn:ss)
+  echo %MRN.b Det er2 $duration(%diff) siden du var på nett nå...
+
+  if (%idag) { echo %MRN.b Du har vært på Inett5 $duration(%idag) og det bare idag! }
+
+  echo %MRN.b Du brukte2 %host sist gang du var på og du var da tilknytta2 %server
+
+  echo %MRN.b
+
+  echo %MRN.b Sist gang du var connecta, så var du connecta i2 $duration(%on.tid.session)
+  set %tall.tot $calc(%tall + %oppstarts.pris)
+
+  echo %MRN.b Det kosta deg;2 $round(%tall,2) $+ kr +2 $calc(%oppstarts.pris * 100) øre i oppstartspris! Totalt; 2 $+ $round(%tall.tot,2) $+  kr
+  echo %MRN.b Totalt har du vært connecta i2 $round($calc(%on.tid.totalt / 3600),2) timer siden2 %MRN.resettimedato
+
+  echo %MRN.b Det har kosta deg totalt2 $round(%total.kostn,2)   +2 $round(%oppstarts.pris.kr,2) kr i oppstartspris! Totalt;2 $round(%toty,2)
+  echo %MRN.b Sist gang du starta scriptet var2 $asctime(%ctime.old)
+
+  var %diff2 $calc(%ctime.now - %ctime.old)
+
+  echo %MRN.b Det er2 $duration(%diff2) siden du starta scriptet sist...
+  echo %MRN.b Du har $script(0) script kjørende...
+  echo %MRN.b Det ser jammen ut som at du kjører MRN scriptet v $+ $MRNscore(build) $+  for å være nøyaktig ;)
+  echo %MRN.b Men du har MRN scriptet v $+ $MRNscore(build2) $+ 
+
+  echo -s %todo
+
+  echo -s %MRN.b System Uptime;2 $duration($calc($ticks / 1000))
+
+  ; variabel %celsius er blitt funnet lenger opp (som $celsius]
+  if ((%celsius) || (%celsius != null)) { 
+    if ($gettok(%celsius,1,32) == ?.?) {
+      echo %MRN.b Ingen verdi funnet. Du bil bli spurt om å oppgi gårdagens laveste tempratur. 
+    } 
+    else {
+      echo %MRN.b Det var $gettok(%celsius,1,32) grader på det laveste i går
+    }
+
+    if ($gettok(%celsius,2,32) == ?.?) {
+      echo %MRN.b Ingen tempratur for et år siden funnet.
+      var %dato $gettok(%celsius,4,32) 
+      var %dato $gettok(%dato,3,46) $+ . $+ $gettok(%dato,2,46) $+ . $+ $gettok(%dato,1,46)
+      if (%cel.day == 1) { var %cel.dag dag } | else { var %cel.dag dager }
+      echo %MRN.b Neste dag er %dato og da er verdien $gettok(%celsius,3,32) - om %cel.day %cel.dag
+      unset %cel.day
+    } 
+    else {
+      echo %MRN.b Det var $gettok(%celsius,2,32) grader på det laveste i fjor.
+    }
+  }
+
+  echo %MRN.b Trim: Du må ta flere pushups!
+
+  dialog -m main main | listremote | did -h main 13
+  if (%dialog.autoopen.perform == 1) { dialog -m perform perform }
+
+  var %startuptime $calc($calc($ticks - %start.up.ticks) / 1000)
+  echo -s %MRN.b Startup Done In %startuptime sekunder
+}
+
+; ------------------------------------------------------------------------------------------------------
+
+alias MRNscore {
+  unset %loopscore
+
+  var %a 0
+  var %x $script(0)
+  var %max.script.c 0
+  var %file 0
+  var %ID 0
+
+  :loop
+  inc %a
+  if (%a > %x) { goto outofloop }
+
+  ; %temp = build, %temp2 = release, %temp3 = ID
+
+  var %temp $read -nl2 $script(%a)
+  var %temp2 $read -nl3 $script(%a)
+  var %temp3 $read -nl4 $script(%a)
+
+  ; if $1 = build2, then count all, regardless of what
+  if ($1 == build2) {
+    var %file $script(0)
+    var %looptest $remove($gettok(%temp,3,32),v)
+    if (%looptest isnum) { var %loopscore $calc(%loopscore + %looptest) }
+    var %looptest $gettok(%temp3,3,32)
+    if (%looptest isnum) { inc %ID %looptest }
+    goto loop
+  }
+
+  ; If the file is released, then count ID, build and file
+
+  var %looptest $gettok(%temp2,3,32)
+  if (%looptest == 1) { 
+    inc %file
+
+    var %looptest $remove($gettok(%temp,3,32),v)
+    if (%looptest isnum) { var %loopscore $calc(%loopscore + %looptest) }
+
+    var %looptest $gettok(%temp3,3,32)
+    if (%looptest isnum) { inc %ID %looptest }
+  }
+  goto loop
+
+  :outofloop
+  ; %MRNscore is not needed other places. Therefore the var
+  if ($1 == build2) { 
+    var %MRNscore $left($calc(%loopscore / $script(0)),6) 
+    set %MRNscorefull $calc(%loopscore / $script(0))
+  }
+
+  if ($1 != build2) { 
+    var %MRNscore $left($calc(%loopscore / %file),6) 
+
+    set %MRN.logo %MRN.logob 0v15 $+ %MRNscore  
+    set %MRNscorefull $calc(%loopscore / %file)
+  }
+
+  set %MRN.build $remove(%loopscore,.)
+
+  if ($len(%MRN.build) == 2) { set %MRN.build %MRN.build $+ 00 }
+  if ($len(%MRN.build) == 3) { set %MRN.build %MRN.build $+ 0 }
+  while ($left(%MRN.build,1) == 0) { set %MRN.build $right(%MRN.build, $calc( $len( %MRN.build ) -1 ) )  }
+
+  if ($1 != build2) { write mrnv.txt $asctime(yyyy.mm.dd) $time $calc(%loopscore / $script(0)) v: $lines(remote.ini) b: %MRN.build f: %file }
+
+  if ($1 == build) { return $calc(%loopscore / %file) build: %MRN.build files: %file ID: %id }
+  if ($1 == build2) { return $calc(%loopscore / $script(0)) build: %MRN.build files: %file ID: %id }
+  if ($1 == buildonly) { return %MRN.build }
+  if ($1 == fileonly) { return %file }
+  if ($1 == IDonly) { return %ID }
+  return $calc(%loopscore / $script(0))
+}
+
+alias rensk.var {
+  ; This alias is used to remove unecessay variables...
+  titlebar
+
+  write -c $shortfn($mircdirtemp\ping.txt)
+  write $shortfn($mircdirtemp\ping.txt) 1
+
+  unset %target.feil
+  unset %MRN.ok2
+  unset %raw.329*
+}
+
+alias pass { 
+  if $isfile($mircdirdata\pass.ini) == $true { 
+    var %a $readini $mircdirdata\pass.ini Xpass 1 
+    if (%a) { return %a | halt }
+  }
+  var %a $?="Hva er passordet ditt til X?" 
+  if (%a) { if $isdir($mircdirdata) == $false { mkdir $mircdirdata }
+  writeini $mircdirdata\pass.ini Xpass 1 %a | return %a | halt }
+}
+
+alias pass2 { 
+  if $isfile($mircdirdata\pass.ini) == $true { 
+    var %a $readini $mircdirdata\pass.ini Xpass 2
+    if (%a) { return %a | halt }
+  }
+  var %a $?="Hva er ditt passordet ditt til Chanserv (Hvis den ikke er i bruk, bare skriv noe tull)" 
+  if (%a) { if $isdir($mircdirdata) == $false { mkdir $mircdirdata }
+  writeini $mircdirdata\pass.ini Xpass 2 %a | return %a | halt }
+}
+
+alias oper {
+  if ($1 == $null) {
+    if $isfile($mircdirdata\pass.ini) == $true { 
+      var %a $readini $mircdirdata\pass.ini Xpass 3
+      if (%a) { return %a | halt }
+    }
+    var %a $?="Hva er ditt passordet ditt til IRCop (Hvis den ikke er i bruk, bare skriv noe tull)" 
+    if (%a) { if $isdir($mircdirdata) == $false { mkdir $mircdirdata }
+    writeini $mircdirdata\pass.ini Xpass 3 %a | return %a | halt }
+  }
+  if ($2 == $null) { 
+    var %a Please state a password. /oper <IRCname> <password>. 
+    var %b IRCname is the name/nick which is stated in the ircd.conf file. Doesn't have to be your nick.
+    echo -a %a %b
+    halt 
+  }
+  .raw oper $1- 
+}
+
+alias listremote {
+  did -r main 4
+  if ($exists($mircdirremote) == $false) { echo %MRN.b Du har ingen andre remote filer fra MRNscriptet. Last ned ifra www.tezt.net | halt }
+  var %nonsense $findfile($mircdirremote,*,*,1,did -a main 4 $nopath($1-))
+  if $exists(script.ini) { did -a main 4 script.ini }
+}
+
+alias update { return update.ini }
+alias o { onotice $1- | halt }
+alias n { notice $1- | halt }
+alias f {
+  if ($1 == $null) { echo -a Please use the correct format | halt }
+  return 02 $+ $1- $+ 
+}
+
+alias setup {
+  if ($isdir($mircdirtemp) == $false) { .mkdir $mircdirtemp }
+  if ($isdir($mircdirdata) == $false) { .mkdir $mircdirdata }
+  if (%MRN.nick == $null) { set %MRN.nick $$?="Skriv standardnicket ditt" | .nick %MRN.nick }
+  if ($pass == $null) { }
+  if ($pass2 == $null) { }
+  if ($nick != %MRN.nick) { .nick %MRN.nick }
+  if (%MRN.logobackup == $null) { set %MRN.logob 0,1 10MRN14 scr15î14pt15é14t 8-14 The 15un14R15eleased 14Script }
+  if ($exists($mircdirdata\farger.txt) == $true) {
+    var %a $rand(1, $calc($lines($mircdirdata\farger.txt) -1))
+    var %b $read -l $+ %a $mircdirdata\farger.txt
+    set %MRN.logob 0,1  $+ %b $+ MRN14 scr $+ %b $+ î14pt $+ %b $+ é14t  $+ %b $+ -14 The 15un $+ %b $+ R15eleased 14Script
+  }
+  if (%MRN.b == $null) { set %MRN.b 5# }
+  if (%Inett == $null) { set %Inett 8.4 }
+  if (%MRN.space == $null) { set %MRN.space                      }
+  if (%MRN.space2 == $null) { set %MRN.space2            }
+  if (%MRN.resettimedato == $null) { set %MRN.resettimedato $fulldate }
+  if (%ac.inter == $null) { set %ac.inter $rand(1,99) }
+  if (%hosttelenor) { set %hosttelenor2 $calc($ctime - %hosttelenor) }
+  if (%hostsense) { set %hostsense2 $calc($ctime - %hostsense) }
+  if (%hostcyber) { set %hostcyber2 $calc($ctime - %hostcyber) }
+  if (%hostnc) { set %hostnc $calc($ctime - %hostnc) }
+  if (%oppstarts.pris == $null) { set %oppstarts.pris 0.5 }
+  if (%away.status == $null) { set %away.status online }
+  if (%MRN.opt == $null) { set %MRN.opt mIRC 5.82 }
+  if (%ac-01 == $null) { set %ac.01 #tezt }
+  if (%ac01 == $null) { set %ac01 on }
+}
+
+alias tidtaker.system {
+  ; Old Code... Should be re-scripted
   if (%on.tid == 0) { 
-
     set %on.tid.session %on.tid
     unset %on.tid
     set %on.tid.totalt $calc(%on.tid.totalt + %on.tid.session)
@@ -100,221 +373,107 @@ alias MRN.start {
 
     }
   }
-
-  ; Tidtaker system end
-
   :else0
+}
 
-  if (%MRN.nick == $null) { 
-    set %MRN.nick $$?="Skriv standardnicket ditt"
-    .nick %MRN.nick
+alias celsius {
+  if ($asctime(HH) >= 7) {
+    if ($exists($mircdirdata\cel.txt) == $false) { write $mircdirdata\cel.txt Denne filen ble laget $asctime(yyyy.mm.dd) $time }
+
+    var %celsius $read -s $+ $asctime(yyyy.mm.dd) $mircdirdata\cel.txt
+
+    if (%celsius) { var %celsius $gettok(%celsius,1,32) } | else { if ($dialog(cel) = $null) { dialog -m cel cel } | var %celsius ?.? }
+
+    var %m $asctime(mm)
+    var %d $asctime(dd)
+    var %y $calc($asctime(yyyy) - 1)
+    dec %d
+    set %cel.day
+    dec %cel.day
+
+    :loop
+    inc %d
+    inc %cel.day
+    if ($len(%d) == 1) { var %d 0 $+ %d }
+
+    if (%d > 31) {
+      var %d 01
+      inc %m
+      if ($len(%m) == 1) { var %m 0 $+ %m }
+    }
+
+    if (%m > 12) {
+      ; Ikke inc'e dagen, fordi den er allerede 01
+      var %m 01
+      inc %y
+    }
+
+    ; %m %d %y vil ikke innvirke på %celsius2, for den ser bare på %y
+    var %celsius2 $read -s $+ $asctime( [ [ %y ] $+ ] .mm.dd) $mircdirdata\cel.txt
+    if (%celsius2) { var %celsius2 $gettok(%celsius2,1,32) | return %celsius %celsius2 } | else { 
+      ; Hvis if-setningen ovenfor gikk bra, avslutt. Ellers finn den 3. celsiusen
+
+      var %date $eval(%y $+ . $+ %m $+. $+ . $+ %d,2)
+      var %celsius3 $read -s $+ $asctime( [ %date ] ) $mircdirdata\cel.txt
+      if (%celsius3) { var %celsius3 $gettok(%celsius3,1,32) | return %celsius ?.? %celsius3 %date } | else { goto loop }
+    }
+  }
+}
+
+alias todo {
+  ; lists up the todo's you have
+  if (!$exists(todo.txt)) { 
+    echo %mrn.b file todo.txt created
+    write -c todo.txt 
   }
 
-  if ($pass == $null) { }
-  if ($pass2 == $null) { }
+  var %x $todo.x
+  if (%x > 0) { var %a $read(todo.txt) }
 
-  if ($nick != %MRN.nick) { .nick %MRN.nick }
-  var %nick.length $len($me)
-
-  if (%MRN.logob == $null) { set %MRN.logob 0,1 15^10MRN15^14 scr15î14pt15é14t 8-14 The 15un14R15eleased 14Script }
-  if (%MRN.b == $null) { set %MRN.b 5# }
-
-  echo Velkommen,2 $me $+ 1! 
-  echo $str(~,$calc(12+%nick.length))
-  if (%MRN.connect == $null) { var %MRN.connect $null }
-  echo %MRN.b Du har startet %MRN.logo $+ 2 %MRN.start ganger og har vært connecta2 %MRN.connect ganger
-
-  if (%Inett == $null) { set %Inett 8.4 }
-  set %tall $calc(%on.tid.session / 3600 * %Inett)
-
-  var %a $calc(%MRN.start - %MRN.connect)
-  if (%a > 0) { echo %MRN.b Du har connecta deg2 $calc(%MRN.start - %MRN.connect) ganger mer enn du har starta scriptet }
-
-  :else1
-  if (%MRN.space == $null) { set %MRN.space                      }
-  if (%MRN.space2 == $null) { set %MRN.space2            }
-
-  set %ctime.avslutt $calc(%ctime.connect + %on.tid.session)
-  set %diff $calc(%ctime.now - %ctime.avslutt)
-
-  echo %MRN.b Sist gang du var connecta var;2 $asctime(%ctime.connect)
-  echo %MRN.b %MRN.space Fram til;2 $asctime(%ctime.avslutt)
-  echo %MRN.b I dag er det:2 $asctime($ctime,dddd dd. mmmm yyyy) Klokka er:2 $asctime($ctime,HH:nn:ss)
-  echo %MRN.b Det er2 $duration(%diff) siden du var på nett nå...
-
-  if ($exists(cel.txt) == $false) { write cel.txt Denne filen ble laget $asctime(yyyy.mm.dd) }
-  set %celsius $read -s $+ $asctime(yyyy.mm.dd) cel.txt
-  if (%celsius == $null) { dialog -m cel cel | goto else2 }
-  echo -s %MRN.b Igår var det 02 $+ $gettok(%celsius,1,32) $+  grader ute på det laveste.
-
-  :else2
-  if (%idagdato != $asctime(dd)) { echo %MRN.b Ny dag, nye muligheter }
-
-  if (%idag) { echo %MRN.b Du har vært på Inett5 $duration(%idag) og det bare idag! }
-
-  echo %MRN.b Du brukte12 %host sist gang du var på og du var da tilknytta12 %server
-  var %tall.spar $calc(%diff / 3600 * %Inett)
-  echo %MRN.b Du har på en måte spart12 $round(%tall.spar,2) $+  kr  
-
-  if (%hosttelenor != $null) { set %hosttelenor2 $calc($ctime - %hosttelenor) }
-  if (%hostsense != $null) { set %hostsense2 $calc($ctime - %hostsense) }
-  if (%hostcyber != $null) { set %hostcyber2 $calc($ctime - %hostcyber) }
-  if (%hostnc != $null) { set %hostnc $calc($ctime - %hostnc) }
-  echo %MRN.b
-
-  if (%hosttelenor2 != $null) { echo %MRN.b Det er2 $duration(%hosttelenor2) siden du ringte opp 2Telenor sist gang }
-  if (%hostsense2 != $null) { echo %MRN.b Det er2 $duration(%hostsense2) siden du ringte opp 2Sensewave sist gang }
-  if (%hostcyber2 != $null) { echo %MRN.b Det er2 $duration(%hostcyber2) siden du ringte opp 2Cybercity sist gang }
-  if (%hostnc2 != $null) { echo %MRN.b Det er2 $duration(%hostnc2) siden du ringte opp 2NetCom sist gang }
-  echo %MRN.b
-
-  echo %MRN.b Sist gang du var connecta, så var du connecta i12 $duration(%on.tid.session)
-  if (%oppstarts.pris == $null) { set %oppstarts.pris 0.5 }
-  set %tall.tot $calc(%tall + %oppstarts.pris)
-  if (%resettimetotalt == $null) { set %resettimetotalt $fulldate }
-
-  echo %MRN.b Det kosta deg;12 $round(%tall,2) $+ kr +12 %oppstarts.pris øre i oppstartspris! Totalt;12 $round(%tall.tot,2) $+ kr
-  echo %MRN.b Totalt har du vært connecta i12 $calc(%on.tid.totalt / 3600) siden2 %resettimetidtotalt
-
-  set %total.kostn $calc(%on.tid.totalt / 3600 * %Inett)
-  set %oppstarts.pris.kr $calc(%oppstarts.pris / 100 * %MRN.connect)
-  set %toty $calc(%total.kostn + %oppstarts.pris.kr)
-
-  echo %MRN.b Det har kosta deg totalt12 $round(%total.kostn,2)   +12 $round(%oppstarts.pris.kr,2) kr i oppstartspris! Totalt;12 $round(%toty,2) $+ 1-121200-3000= $+ 4 $+ $round($calc(%toty - 1200 - 3000),2))
-  echo %MRN.b Sist gang du starta scriptet var12 $asctime(%ctime.old)
-
-  set %diff2 $calc(%ctime.now - %ctime.old)
-
-  echo %MRN.b Det er12 $duration(%diff2) siden du starta scriptet sist...
-  echo -s %MRN.b Du har $script(0) script kjørende...
-  echo -s %MRN.b Det ser ut som at du har MRN scriptet v $+ $MRNscore(build)
-
-  echo -s %MRN.b System Uptime;2 $duration($calc($ticks / 1000))
-
-  if (%okconn == ja) { 
-    echo -s %MRN.b 3Du er nå klar til å mIRCe... 
-    goto totalend 
-  } 
-  echo -s %MRN.b Du er 4ikke klar til å mIRCe 
-  echo -s %MRN.b Remember to type: /set $chr(37) $+ okconn ja before you connect
-  :totalend
-
-  dialog -m main main | listremote | did -h main 13
-
-  unset %diff
-  unset %diff2
-
-  var %startuptime $calc($calc($ticks - %start.up.ticks) / 1000)
-  echo -s %MRN.b Startup Done In %startuptime sekunder
-
-  ; ALPHA NOTICE
-
-  echo -s Plese notice that this is a alpha release. Several remotefiles hasn't been added
-  echo -s If you found any bug, even the smallest one, please report it to mazter00@online.no or to ^MRN^ @ Undernet
-  echo -s Check out www.tezt.net for updates
-
+  if (%a) { return Du har %x todo's, og en av dem er: " $+ %a $+ " } | else { return Du har ingen todo's }
 }
 
-; ------------------------------------------------------------------------------------------------------
-
-alias MRNscore {
-  unset %loopscore
-
-  set %max.script $script(0)
-
-  :loop
-  inc %max.script.
-  if (%max.script. > %max.script) { goto outofloop }
-  set %max.script.l $read -nl2 $script(%max.script.)
-
-  set %looptest $remove($gettok(%max.script.l,3,32),v)
-  if (%looptest isnum) { set %loopscore $calc(%loopscore + %looptest) }
-  inc %max.script.c | goto loop
-
-  :outofloop
-  set %MRNscore $left($calc(%loopscore / $script(0)),6)
-  set %MRN.logo %MRN.logob 0v15 $+ %MRNscore 
-  set %MRNscorefull $calc(%loopscore / $script(0))
-
-  set %MRN.build $remove(%loopscore,.)
-  if ($len(%MRN.build) == 3) { set %MRN.build %MRN.build $+ 0 }
-  while ($left(%MRN.build,1) == 0) { set %MRN.build $right(%MRN.build, $calc( $len( %MRN.build ) -1 ) )  }
-
-  unset %max.script*
-  write mrnv.txt $asctime(yyyy.mm.dd) $time $calc(%loopscore / $script(0)) $lines(remote.ini) %MRN.build
-  if ($1 == build) { return $calc(%loopscore / $script(0)) build: %MRN.build }
-  if ($1 == buildonly) { return %MRN.build }
-  return $calc(%loopscore / $script(0))
+alias todo.x {
+  if ($exists(todo.txt)) { return $lines(todo.txt) } | else { return ingen }
 }
 
-alias echolist {
-  if ($1 != $null) { echo %MRN.b Du har $1- filer i $mircdirremote =) }
-}
 
-alias rensk.var {
-  ; This alias is used to remove unecessay variables...
-  unset %raw.329*
-  titlebar
-  write -c $mircdirtemp\ping.txt
-  write $mircdirtemp\ping.txt 1
-  unset %target.feil
-  unset %MRN.ok2
-}
+alias todo2 {
+  var %todo.x $todo.x
+  inc %todo.x | dec %todo.x
+  if (%todo.x isnum) { var %a $read(todo.txt) } | else { halt }
 
-alias update { return update.ini }
-
-alias pass { 
-  if $isfile($mircdirdata\pass.ini) == $true { 
-    var %a $readini $mircdirdata\pass.ini Xpass 1 
-    if (%a != $null) { return %a | halt }
+  if ($server) { 
+    if ($me ison #tezt) { 
+      msg #tezt Kan noen minne MRN om at han skal gjøre en av sine %todo.x TODO'er? Som f.eks " $+ %a $+ "
+      halt   
+    }
   }
-  var %a $?="Hva er ditt passordet ditt til X?" 
-  if (%a != $null) { if $isdir($mircdirdata) == $false { mkdir $mircdirdata }
-  writeini $mircdirdata\pass.ini Xpass 1 %a | return %a | halt }
+  echo -a TODO: " $+ %a $+ "
 }
-
-alias pass2 { 
-  if $isfile($mircdirdata\pass.ini) == $true { 
-    var %a $readini $mircdirdata\pass.ini Xpass 2
-    if (%a != $null) { return %a | halt }
-  }
-  var %a $?="Hva er ditt passordet ditt til Chanserv (Hvis den ikke er i bruk, bare skriv noe tull)" 
-  if (%a != $null) { if $isdir($mircdirdata) == $false { mkdir $mircdirdata }
-  writeini $mircdirdata\pass.ini Xpass 2 %a | return %a | halt }
-}
-
-alias listremote {
-  did -r main 4
-  if $exists(script.ini) { did -a main 4 script.ini }
-  if ($exists($mircdirremote) == $false) { echo %MRN.b Du har ingen andre remote filer fra MRNscriptet. Last ned ifra www.tezt.net | halt }
-  echolist $findfile($mircdirremote,*,*,1,did -a main 4 $nopath($1-))
-}
-
-alias o { onotice $1- | halt }
 
 ; ------------------------------------------------------------------------------------------------------
 
 on 1:dialog:main:init:*:{ 
   did -h $dname 2,3,12,13,14,15,18
-
-  did -ra $dname 121 %ac-01 
+  did -ra $dname 121 %ac-01
   did -ra $dname 122 %ac-02
-  did -ra $dname 123 %ac-03 
-  did -ra $dname 124 %ac-04 
-  did -ra $dname 125 %ac-05 
-  did -ra $dname 126 %ac-06 
-  did -ra $dname 127 %ac-07 
-  did -ra $dname 128 %ac-08 
-
+  did -ra $dname 123 %ac-03
+  did -ra $dname 124 %ac-04
+  did -ra $dname 125 %ac-05
+  did -ra $dname 126 %ac-06
+  did -ra $dname 127 %ac-07
+  did -ra $dname 128 %ac-08
   did -ra $dname 129 %ac-09
   did -ra $dname 130 %ac-10
-  did -ra $dname 131 %ac-11 
-  did -ra $dname 132 %ac-12 
-  did -ra $dname 133 %ac-13 
-  did -ra $dname 134 %ac-14 
-  did -ra $dname 135 %ac-15 
-  did -ra $dname 136 %ac-16 
-
+  did -ra $dname 131 %ac-11
+  did -ra $dname 132 %ac-12
+  did -ra $dname 133 %ac-13
+  did -ra $dname 134 %ac-14
+  did -ra $dname 135 %ac-15
+  did -ra $dname 136 %ac-16
+  set -u10 %dialog.main Du har $script(0) script loaded...
+  did -ra $dname 5 %dialog.main
 }
 
 dialog main { 
@@ -332,11 +491,9 @@ dialog main {
 
   list 4,4 45 60 107, hsbar, tab 16
 
-  text "Du har"5,1 1 25 7, tab 16
-  text $script(0),6,18 1 15 7, tab 16
-  text "scripts loaded...",7,25 1 50 7, tab 16
+  text %dialog.main,5,1 1 95 7, tab 16
 
-  text "Du bruker ^MRN^ scrîptét v",8,1 10 70 7, tab 16
+  text "Du bruker MRN scrîptét v",8,1 10 70 7, tab 16
   text %MRNscore,9,69 10 25 7, tab 16
 
   text "",11,1 19 99 7, tab 16
@@ -385,14 +542,12 @@ dialog main {
   edit "",135, 52 111 34 10, tab 17
   edit "",136, 52 122 34 10, tab 17
 
-  text "join en kanal",140,10 133 40 7, tab 17
-  text "hver",141, 6 142 40 7, tab 17
-  edit %ac.inter,142,18 141 13 10, tab 17
-  text "sekund",143, 33 142 25 10, tab 17
+  text "join en kanal hver",140,7 134 50 7, tab 17
+  text %ac.inter,142,7 142 6 7, tab 17
+  text "sekund...",143,15 142 25 7, tab 17
 
-  button "<",145,50 142 10 10, tab 17
-  button ">"146,60 142 10 10, tab 17
-
+  button "<",145,48 142 7 9, tab 17
+  button ">"146,55 142 7 9, tab 17
 }
 
 ; ------------------------------------------------------------------------------------------------------
@@ -400,19 +555,30 @@ dialog main {
 on 1:dialog:main:sclick:16:{ 
   var %x $did(4).seltext
   if (%x == $null) { did -h $dname 18 | did -v $dname 1,4 }
-  if (%x != $null) { did -h $dname 18 | did -v $dname 1,2,3,4,12 }
-
+  if (%x) { did -h $dname 18 | did -v $dname 1,2,3,4,12 }
 }
 
 on 1:dialog:main:sclick:17:{ did -h $dname 1,2,3,4,12,15 | did -v $dname 18 }
 on 1:dialog:main:sclick:18:{ dialog -k $dname }
+on 1:dialog:main:sclick:145:{ 
+  if (%ac.inter == 1) { halt }
+  dec %ac.inter 
+  did -ra $dname 142 %ac.inter
+}
+
+on 1:dialog:main:sclick:146:{ 
+  if (%ac.inter == 99) { halt }
+  inc %ac.inter
+  did -ra $dname 142 %ac.inter
+}
 
 on 1:dialog:main:sclick:*:{
   if ($did == 4) { 
 
     var %x $did(4).seltext
+    if (%x == $null) { listremote | halt } 
     if (%x == script.ini) { var %a script.ini | goto 1 }
-    var %a $mircdirremote\ $+ $did(4).seltext
+    var %a $mircdirremote\ $+ %x
 
     :1
     var %b $read -nl2 %a
@@ -448,11 +614,21 @@ on 1:dialog:main:sclick:*:{
 
   if ($did == 2) {
     var %f $mircdirremote\ $+ $did(4).seltext
-    .load -rs %f | echo -s %f er loaded kl. $time $date | did -ra $dname 6 $script(0) | did -ra $dname 7 scripts loaded... | did -b $dname 2 | did -e $dname 3 | did -h $dname 15
+    .load -rs %f | echo -s %f er loaded kl. $time $date 
+    set -u10 %dialog.main Du har $script(0) script loaded...
+    did -ra $dname 5 %dialog.main
+    did -b $dname 2 
+    did -e $dname 3 
+    did -h $dname 15
   }
   if ($did == 3) {
     var %f $mircdirremote\ $+ $did(4).seltext
-    .unload -rs %f | echo -s %f er unloaded kl. $time $date | did -ra $dname 6 $script(0) | did -ra $dname 7 scripts loaded... | did -b $dname 3 | did -e $dname 2 | did -v $dname 15
+    .unload -rs %f | echo -s %f er unloaded kl. $time $date 
+    set -u10 %dialog.main Du har $script(0) script loaded...
+    did -ra $dname 5 %dialog.main
+    did -b $dname 3 
+    did -e $dname 2 
+    did -v $dname 15
   }
   if ($did == 15) {
     run $mircdirremote\ $+ $did(4).seltext
@@ -461,52 +637,99 @@ on 1:dialog:main:sclick:*:{
 
 ; -------------------------------------------------------------------------------------------------------
 
-on 1:dialog:cel:init:*:{ did -h cel 3,4,5 }
-
-dialog cel {
+dialog perform { 
   ;                   venstre|høyre opp|ned bredde høyde
-  title "Tempratur innskriving"
-  size 320 80 90 60
+  title "Perform these tests..."
+  size 80 260 155 180
   option dbu
 
-  text "Skriv inn gårdagens laveste tempratur...",1,3 3 80 14,center
-  edit "",2,30 22 19 10
-  button "&Update file?",3,45 37 34 15
-  button "&Avbryt",4,6 37 34 15
-  button "&OK",5,30 37 34 15
-  button "&Avbryt",6,23 37 34 15,ok
+  text "Please perform these tests...",1,1 1 154  7,center
+
+  check "&Scan for nicks in SeenScript which are older than",2,1 10 126  7
+  edit "",3,127 9 15 10,right
+  text "days",4,142 10 12 7
+
+  check "Show results",5,10 20 45 7
+  check "In echo",6,60 20 30 7
+  check "In dialog",7,95 20 30 7
+
+  check "Show progress",8,10 30 45 7
+  check "In echo",9,60 30 30 7
+  check "In dialog",10,95 30 30 7
+
+  check "&AutoDelete old record",11,10 40 89  7
+
+  text "Progress bar:",12,1 50 100 7
+  text "",13,35 50 100 7
+  edit "0",14,140 48 13 10,right
+
+  text "",15,1 59 154 20
+
+  list 50,1 80 153 90
+
+  button "&Perform",100,40 164 30 15,ok
+  button "&Cancel",101,85 164 30 15,cancel
+  box "",102,34 46 103 13
 }
 
-on 1:dialog:cel:edit:*:{
-  if ($did(cel,2).edited == $true) { 
-    did -v cel 4 | did -h cel 6
-    var %a $did(cel,2)
-    if ($right(%a,1) == ,) { did -b cel 3 | did -t cel 4 | halt }
-    did -et cel 3
-    var %b $remove(%a,.,-,$chr(44))
-    if (%b == $null) { halt }
-    if (%b !isnum) { did -r cel 2 | did -ra cel 1 Invalid format. Prøv igjen | did -h cel 3 | did -t cel 4 | halt }
-    did -ra cel 2 $did(cel,2) | did -vt cel 3
-    if ($did(cel,2).edited == $null) { did -h cel 3 | did -t cel 4 }  
+on 1:dialog:perform:init:*:{
+  did -b $dname 3,5,6,7,8,9,10,11
+}
+
+on 1:dialog:perform:sclick:2:{
+  if ($did(2).state == 0) { did -b $dname 3,5,6,7,8,9,10,11 }
+  if ($did(2).state == 1) { 
+    did -e $dname 3,5,8,11 
+    if ($did(5).state == 1) { did -e $dname 6,7 }
   }
-  if ($did(cel,2).edited == $null) { did -h cel 3 | did -t cel 4 }
 }
 
-on 1:dialog:cel:sclick:*:{
-  if ($did == 3) { 
-    var %a $did(cel,2)
-    var %b $replace(%a,$chr(44),.)
-  write cel.txt $asctime(yyyy.mm.dd) %b | did -h cel 2,3,4 | did -ra cel 1 Takk! Klikk OK for å lukke dialogen | did -vf cel 5 }
-  if ($did == 5) { dialog -k cel | dialog -m tempr tempr }
-  if ($did == 4) { dialog -x cel }
+on 1:dialog:perform:sclick:5:{
+  if ($did(5).state == 0) { did -b $dname 6,7 }
+  if ($did(5).state == 1) { did -e $dname 6,7 }
 }
 
-; ------------------------------------------------------------------------------------------------------
+on 1:dialog:perform:sclick:8:{
+  if ($did(8).state == 0) { did -b $dname 9,10 }
+  if ($did(8).state == 1) { did -e $dname 9,10 }
+}
+
+on 1:dialog:perform:edit:14:{ did -ra $dname 14 0 }
+
+on 1:dialog:perform:sclick:100:{
+  if ($did(2).state == 1) {
+    var %did3 $did(3).text
+    if (%did3 == $null) { did -a $dname 50 Feil: Variabel mangler. Skriv inn dager i 'days' feltet | halt }
+    if (%did3 isnum) { 
+      ; Disse to prøvene ovenfor må være godkjente, før vi /seenscan'er noen...
+
+      var %a 0 | var %b 0 | var %c 0 | var %d 0 |  var %e 0
+
+      if ($did(5).state == 1) { var %b $did(6).state | var %d $did(7).state }
+      if ($did(8).state == 1) { var %c $did(9).state | var %e $did(10).state }
+      if ($did(11).state == 1) { var %a 1 }
+
+      did -a $dname 50 Starting /seenscan $did(3).text %a %b %c %d %e
+      did -r $dname 15
+      if $alias(seenscan) {
+        seenscan $did(3).text %a %b %c %d %e
+      }
+    }
+  }
+  if ($did(2).state == 0) {
+    did -a $dname 50 Du har ikke indikert at du vil gjøre noe. 
+    did -a $dname 50 Klikk derfor på 'cancel', ikke 'perform' =)
+    halt
+  }
+}
+; --------------------------------------------------------------------------------------------------------------
 
 menu channel {
   -
   I'm using MRNscriptet:{ 
-    var %a I'm using (2^MRN^ scrîptét) (2v $+ %MRNscore $+ ) (2build: $MRNscore(buildonly) $+ ) (2by) (2^MRN^) (2 www.tezt.net ) (2Optimized for: mIRC v $+ $version $+ )
+    var %a 1I'm using (2MRN scrîptét1) (2v $+ %MRNscore $+ 1) (2by1) (2MRN1) (2build: $MRNscore(buildonly) $+ 1) 
+    var %b (2files: $MRNscore(fileonly) $+ ) (2ID: $MRNscore(IDonly) $+ ) (2 www.tezt.net 1)
+    var %a %a %b
     if ($chan == #norge) { var %b $strip(%a,burc) | msg $chan %b } | else msg $chan %a
   }
   -
@@ -516,248 +739,34 @@ menu channel {
 menu status {
   -
   I'm using MRNscriptet:{ 
-    echo -s I'm using (2^MRN^ scrîptét) (2v $+ %MRNscore $+ ) (2build: $MRNscore(buildonly) $+ ) (2by) (2^MRN^) (2 www.tezt.net ) (2Optimized for: mIRC v $+ $version $+ )
+    var %a 1I'm using (2MRN scrîptét1) (2v $+ %MRNscore $+ 1) (2build: $MRNscore(buildonly) $+ 1)
+    var %b (2by1) (2MRN1) (2 www.tezt.net 1)
+    echo -s %a %b
   }
   -
   Open dialog main:{ dialog -m main main | listremote }
   Open dialog upgrade:dialog -m upgrade upgrade
   Open dialog d.grades:dialog -m d.upgrades d.upgrades
   Open dialog cel:dialog -m cel cel
+  Safe Mode:{ set %MRN.ok2 something }
   -
   Check for new version:{ sock.connect }
 }
-
 
 menu menubar {
   -
   Check for new version:{ sock.connect }
   -
   I'm using MRNscriptet:{ 
-    var %a I'm using 14(2^MRN^ scrîptét1) 14(2v $+ %MRNscore $+ 1) 14(2by1) 14(2^MRN^1) 14(2 www.tezt.net 1) 
-    if ($chan == #norge) { var %b $strip(%a,burc) | msg $chan %b } | else msg $chan %a
+    var %a I'm using 14(2MRN scrîptét1) 14(2v $+ %MRNscore $+ 1) 14(2by1) 14(2MRN1) 14(2 www.tezt.net 1) 
+    if ($chan == #norge) { var %b $strip(%a,burc) | msg $chan %b } | elseif ($chan) { msg $chan %a } | else echo -s %a
   }
 }
 
-; ------------------------------------------------------------------------------------------------------
-
-alias sock.connect {
-  sockopen sjekk lightning.prohosting.com 80
-  if ($dialog(upgrade) == $null) { dialog -m upgrade upgrade }
-  did -a upgrade 3 Connecting socket. Could take some time.
+on 1:DNS:/echo $nick ip address: $iaddress named address: $naddress resolved address: $raddress
+on 1:notify:{ 
+  set -s %whois.notify on 
+  whois $nick 
 }
 
-on 1:SOCKOPEN:sjekk: {
-  if ($sockerr) { 
-    if ($sockerr == 4) { did -a upgrade 3 You are not connected | halt }
-    did -a upgrade 3 $sock(sjekk).wsmsg | halt
-  }
-  sockwrite -n sjekk GET /~mazter00/update.ini
-}
-
-on 1:SOCKREAD:sjekk: {
-  if ($sockerr) { 
-    if ($sockerr == 4) { did -a upgrade 3 You are not connected | halt }
-    did -a upgrade 3 $sock(sjekk).wsmsg | halt
-  }
-
-  if $exists($update) { .remove $update }
-  set %sockopen $ticks
-  did -b upgrade 1
-  did -a upgrade 3 Socket connected. Receiving...
-
-  var %a 0
-  var %b 1
-  var %c 0
-  var %d 0
-
-  :loop
-  sockread -fn %upgrade
-  if (%upgrade == $null) { inc %c | goto loop2 }
-  write $update %upgrade
-  if ($sockbr != 0) { goto loop }
-
-
-  ; This loop is made for making this script to be able to download more than 4096 bytes.
-
-  :loop2
-  sockread -fn $calc(4096 * %c) %upgrade
-  if (%upgrade == $null) { if (%d > 0) { goto loop3 } | inc %c | inc %d | goto loop2 }
-  write $update %upgrade
-  if ($sockbr != 0) { goto loop2 }
-
-  :loop3
-  var %a $sock(sjekk).sent
-  var %b $sock(sjekk).rcvd
-  var %c $calc( $calc( $ticks - %sockopen ) / 1000 )
-  var %d $sock(sjekk).to
-
-  sockclose sjekk
-  did -a upgrade 3 Finished with downloading $update
-  did -a upgrade 3 Sent %a $+ , Recieved %b in %c effective seconds.
-  did -a upgrade 3 That would be $round($calc(%b / %c),2) bytes per second.
-  did -a upgrade 3 It was really %d seconds. Speed; $round($calc(%b / %d),2)
-  did -a upgrade 3 Comparing...
-  did -e upgrade 1
-
-  if $exists(updatelist.txt) { .remove updatelist.txt }
-  compare
-
-  did -a upgrade 3 Last update was; $readini update.ini upload 1
-  did -a upgrade 3 Should you however encounter any bugs or 
-  did -a upgrade 3 have any ideas of improvement
-  did -a upgrade 3 then you are very welcome to send the author an email
-  did -a upgrade 3 >>> mazter00@online.no <<<
-
-}
-
-; ------------------------------------------------------------------------------------------------------
-
-dialog upgrade {
-  ;                   venstre|høyre opp|ned bredde høyde
-  title "Upgrade"
-  size -1 -1 175 105
-  option dbu
-
-  button "ok",1,2 44 30 15,ok
-  button "Upgrade",2,2 25 30 15
-  list 3,35 1 135 102
-}
-
-on 1:dialog:upgrade:init:0:{ did -b upgrade 2 }
-on 1:dialog:upgrade:sclick:1:{ sockclose sjekk }
-on 1:dialog:upgrade:sclick:2:{ dialog -m d.upgrades d.upgrades | dialog -x upgrade upgrade }
-
-; ------------------------------------------------------------------------------------------------------
-
-dialog d.upgrades {
-  ;                   venstre|høyre opp|ned bredde høyde
-  title "Download Upgrades"
-  size -1 -1 120 100
-  option dbu
-
-  button "ok",1,2 34 30 15,ok
-  text "Click in the list to download",2,2 5 30 25
-  list 3,35 11 80 50
-}
-
-on 1:dialog:d.upgrades:init:0:{ 
-  did -h $dname 2
-  var %a 0
-  :loop
-  inc %a
-  if ($exists(updatelist.txt) == $false) { did -a $dname 3 Error in opening updatelist.txt | halt }
-  var %b $read -l $+ %a updatelist.txt
-  if (%b != $null) { did -a $dname 3 %b | inc %a | did -v $dname 2 | goto loop }
-}
-
-on 1:dialog:d.upgrades:sclick:3:{ 
-  var %a $did(3).seltext
-  did -e $dname 2
-  d.upgrade %a
-  if $dialog(down) == $null) { dialog -m down down }
-}
-
-; ------------------------------------------------------------------------------------------------------
-
-dialog down {
-  ;                   venstre|høyre opp|ned bredde høyde
-  title "Download dialog"
-  size -1 -1 185 71
-  option dbu
-
-  button "ok",1,2 24 30 15,ok
-  list 3,35 1 150 70
-}
-
-; ------------------------------------------------------------------------------------------------------
-
-alias d.upgrade {
-  if ($1 == $null) { halt }
-  sockopen down lightning.prohosting.com 80
-  if ($dialog(down) == $null) { dialog -m down down }
-  set %MRN.wanted.down $1
-  did -a down 3 You wanted to download %MRN.wanted.down
-  sock.connect2
-}
-
-; ------------------------------------------------------------------------------------------------------
-
-alias sock.connect2 {
-  sockclose down
-  sockopen down lightning.prohosting.com 80
-  if ($dialog(down) == $null) { dialog -m down down }
-  did -a down 3 Connecting socket. Could take some time.
-}
-
-on 1:SOCKOPEN:down: {
-  if ($sockerr) { 
-    if ($sockerr == 4) { did -a down 3 You are not connected | halt }
-    did -a down 3 $sock(down).wsmsg | halt
-  }
-  var %a [ /~mazter00/script/ [ $+ [ %MRN.wanted.down ] ] ]
-  sockwrite -n down GET %a
-}
-
-on 1:SOCKREAD:down: {
-  if ($sockerr) { 
-    if ($sockerr == 4) { did -a upgrade 3 You are not connected | halt }
-    did -a upgrade 3 $sock(down).wsmsg | halt
-  }
-
-  if $exists(%MRN.wanted.down) { .remove %MRN.wanted.down }
-  set %sockopen $ticks
-  did -a down 3 Socket connected. Receiving...
-
-  var %a 0
-  var %b 1
-  var %c 0
-  var %d 0
-
-  :loop
-  sockread -fn %upgrade
-  if (%upgrade == $null) { inc %c | goto loop2 }
-  write %MRN.wanted.down %upgrade
-  if ($sockbr != 0) { goto loop }
-
-
-  ; This loop is made for making this script to be able to download more than 4096 bytes.
-
-  :loop2
-  sockread -fn $calc(4096 * %c) %upgrade
-  if (%upgrade == $null) { if (%d > 0) { goto loop3 } | inc %c | inc %d | goto loop2 }
-  write %MRN.wanted.down %upgrade
-  if ($sockbr != 0) { goto loop2 }
-
-  :loop3
-  var %a $sock(down).sent
-  var %b $sock(down).rcvd
-  var %c $calc( $calc( $ticks - %sockopen ) / 1000 )
-
-  sockclose down
-  did -a down 3 Finished with downloading $update
-  did -a down 3 Sent %a $+ , Recieved %b in %c seconds. 
-  did -a down 3 That would be $round($calc(%b / %c),2) bytes per second.
-  did -a down 3 Installing...
-
-  if $script(%MRN.wanted.down) == $null { 
-    var %d [ $mircdirremote\ [ $+ [ %MRN.wanted.down ] ] ]
-
-    copy %MRN.wanted.down %d
-    remove %MRN.wanted.down
-
-    load -rs %d
-    did -a down 3 Installed! 
-    goto end 
-
-  } 
-  var %d [ $mircdirremote\ [ $+ [ %MRN.wanted.down ] ] ]
-
-  remove %MRN.wanted.down
-  unload -rs %MRN.wanted.down
-  load -rs %d
-
-  :end
-  did -a down 3 The script ( %MRN.wanted.down ) is installed!
-  did -r d.upgrades 3
-  unset %MRN.wanted.down
-}
+alias quit { write quit.txt $date $time $1- | quit $1- }
