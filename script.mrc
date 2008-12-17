@@ -94,8 +94,7 @@ alias MRN.start {
   var %todo %MRN.b $todo
 
   ; Starte timers
-  ; .timerTODO 0 4000 { $!todo2 }
-  .timermp3checkget 0 60 { mp3.check.get }
+  .timerTODO 0 4000 { $!todo2 }
 
   inc %MRN.start
 
@@ -142,7 +141,7 @@ alias MRN.start {
 
   echo -s %MRN.b System Uptime;2 $duration($calc($ticks / 1000))
 
-  ; variabel %celsius er blitt funnet lenger opp (som $celsius]
+  ; variabel %celsius er blitt funnet lenger opp
   if ((%celsius) || (%celsius != null)) { 
     if ($gettok(%celsius,1,32) == ?.?) {
       echo %MRN.b Ingen verdi funnet. Du bil bli spurt om å oppgi gårdagens laveste tempratur. 
@@ -163,8 +162,6 @@ alias MRN.start {
       echo %MRN.b Det var $gettok(%celsius,2,32) grader på det laveste i fjor.
     }
   }
-
-  echo %MRN.b Trim: Du må ta flere pushups!
 
   dialog -m main main | listremote | did -h main 13
   if (%dialog.autoopen.perform == 1) { dialog -m perform perform }
@@ -768,5 +765,6 @@ on 1:notify:{
   set -s %whois.notify on 
   whois $nick 
 }
+
 
 alias quit { write quit.txt $date $time $1- | quit $1- }
