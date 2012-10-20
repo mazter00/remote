@@ -1,4 +1,4 @@
-; MP3system v0.104
+; MP3system v0.105
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,7 +25,8 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
-; v0.104 01.10.2005 Changed behavior in alias mp3.equal. Still takes the oldest entry in mp3ship, but now takes a random line from mp3hit. This is due to calculations made in @mp3.eq4
+; v0.105 21.10.2005 Alias mp3.equal: Now assigns an un-div'ed mp3 automatically, so the div for the mp3 will be used in the calculation
+; v0.104 01.10.2005 Changed behavior in alias mp3.equal. Still takes the oldest entry in mp3skip, but now takes a random line from mp3hit. This is due to calculations made in @mp3.eq4
 ; v0.103 20.09.2005 alias mp3play: It now checks the oldest entry in data\mp3skip.txt and data\mp3hit.txt, which should prevent mp3.error from coming up unnecessarily.
 ; v0.102 02.06.2005 Fixed a bug in alias mp3.equal which didn't add times played in not-played mp3s. Resulting in failure of picking mp3s
 ; v0.101 23.05.2005 Now shows the playing song in dialog
@@ -729,7 +730,7 @@ alias mp3play {
   var %showdiv4 $showdiv2( $find.div($remove(%b,")) , @div3- $+ %div , $nopath($remove(%b,"))).return3
 
   .timershowdiv1 1 1 { echo -s [||||||||] showdiv om 8 sekunder. ( $remove(%b,") ) }
-  .timershowdiv2 1 2 { echo -s [||||||| ] showdiv om 7 sekunder. ( Div: %div ) }
+  .timershowdiv2 1 2 { echo -s [||||||| ] showdiv om 7 sekunder. ( Div: %div Kamper: $lines(data\div\history $+ %div $+ .txt) Lengde: $mp3.length($remove(%b,")) ) }
   .timershowdiv3 1 3 { echo -s [||||||  ] showdiv om 6 sekunder. ( %showdiv2 ) }
   .timershowdiv4 1 4 { echo -s [|||||   ] showdiv om 5 sekunder. ( %showdiv3 ) }
   .timershowdiv5 1 5 { echo -s [||||    ] showdiv om 4 sekunder. ( %showdiv4 ) }
@@ -1214,7 +1215,7 @@ alias check.hitlist {
 }
 
 alias mp3.equal {
-  ; aline's several windows. Only alias to aline @mp3eq5 and *6
+  ; aline's several windows. Only alias to aline @mp3eq5 and *6 and *7
   ; In case of broken code (64kb-limit), then remember to return %pick
 
   var %eq.ticks $ticks
@@ -1225,14 +1226,14 @@ alias mp3.equal {
 
   :ec2
 
+  ; eq=random files, eq2=last played, eq3=obsolute, eq4=pick, eq5=rate, eq6=place in div, eq7=div
   if ( $window(@MP3eq) == $null ) window -sh @MP3eq
   if ( $line(@MP3eq,0) > 0 ) dline @MP3eq 1- $+ $line(@MP3eq,0)
 
   if ( $window(@MP3eq2) == $null ) window -sh @MP3eq2
   if ( $line(@MP3eq2,0) > 0 ) dline @MP3eq2 1- $+ $line(@MP3eq2,0)
 
-  if ( $window(@MP3eq3) == $null ) window -sh @MP3eq3
-  if ( $line(@MP3eq3,0) > 0 ) dline @MP3eq3 1- $+ $line(@MP3eq3,0)
+  ; @mp3eq3 is obsolute
 
   if ( $window(@MP3eq4) == $null ) window -sh @MP3eq4
   if ( $line(@MP3eq4,0) > 0 ) dline @MP3eq4 1- $+ $line(@MP3eq4,0)
@@ -1242,6 +1243,9 @@ alias mp3.equal {
 
   if ( $window(@MP3eq6) == $null ) window -sh @MP3eq6
   if ( $line(@MP3eq6,0) > 0 ) dline @MP3eq6 1- $+ $line(@MP3eq6,0)
+
+  if ( $window(@MP3eq7) == $null ) window -sh @MP3eq7
+  if ( $line(@MP3eq7,0) > 0 ) dline @MP3eq7 1- $+ $line(@MP3eq7,0)
 
   if (!$window(@MP3.provided)) { window -h @MP3.provided }
 
@@ -1257,11 +1261,13 @@ alias mp3.equal {
   ; In case of an import that contains divs, which probably contains non-existans mp3s on this (new) system
   var %rf 0
   var %rfx 3
+
   :r.file
   inc %rf
   if (%rf <= %rfx) {
     var %r.div $rand(1,$low.div)
     var %r.div.file $read(data\div\div $+ %r.div $+ .txt)
+    if (!%r.div.file) { echo -s Failed to find a random file from %r.div.file $+ , looping | dec %rf | goto r.file }
     aline @MP3.provided %r.div.file
     goto r.file
   }
@@ -1275,19 +1281,66 @@ alias mp3.equal {
   if (%red > 2) { goto continue }
 
 
-  if (%red == 1) { var %rand 1 | var %s $read(%red.file, [ %rand ] ) | goto extract } 
+  if (%red == 1) { 
+    var %rand 1
+    var %max.rand $lines(%red.file)
+    var %s $read(%red.file, [ %rand ] )  
+    var -s %s.file.raw $gettok(%s,1,32) 
+    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
+    echo -s Fant %rand2 linje12 (av %max.rand $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 $duration($calc($ctime - $gettok(%s,-1,32))) eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
+
+    goto extract 
+  } 
   elseif (%red == 2) { 
     var %max.rand $lines(%red.file)
     var %rand $rand(1, [ %max.rand ] ) 
     var %s $read(%red.file, [ %rand ] )
-    echo -s 12Fant random linje ( $+ %rand $+ / $+ %max.rand $+ ) fra %red.file som inneholder dette: %s
+    var -s %s.file.raw $gettok(%s,1,32)
+    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
+    echo -s Fant %rand2 linje12 ( $+ %rand $+ / $+ %max.rand $+ / $+ $int($calc($calc(%rand / %max.rand) * 100)) $+ % $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 $duration($calc($ctime - $gettok(%s,-1,32))) eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
   }
 
 
-
   :extract
+
+  echo -s Vi vet at alle mellomrom blir til understek, så vi prøver dette aller først
+  var -s %1test $replace(%s.file.raw,$chr(95),$chr(32))
+  var -s %2test $exists(%1test)
+  if (%2test) { 
+    echo -s 3Denne eksisterer
+    echo -s %rand $+ . linje fra %red.file ble funnet og er langt til ( $+ %s.file.raw $+ ) 
+    if (%search) { aline @mp3.provided %search }
+  }
+
+  var %root $left(%s.file.raw,3)
+
+  echo -s lager en no-file
+  var -s %nf $nofile(%s.file.raw)
+  var -s %steps $numtok(%nf,92)
+
+  echo -s spør step om noe
+  var -s %step $step(%nf,1)
+
+  echo -s > $isdir(%step) <
+  echo -s Vet ikke om det virka
+
+  echo -s spør step om noe(2) - loop?
+  var -s %step $step(%nf,2)
+
+
+
+
+
+
+  echo -s s.file: %s.file
+  echo -s 10New system:  %s.file  >> $findfile(%nf,%s.file,1)
+
+  echo -s return, midlertidig tatt vekk pga at jeg skal bruke det som vekkerklokke
+  ; return
+
   ; Extract the folder
-  var %nf $nofile(%s)
   var %steps $numtok(%nf,92)
 
   :try.again
@@ -1296,8 +1349,9 @@ alias mp3.equal {
   var %root.c $isdir($left(%s,3))
 
   if (!%root.c) { 
-    echo -s Root ( $+ %root $+ ) doesn't exists
+    echo -s Root ( $+ %root $+ ) doesn't even exists
     if ($left(%root,1) == i) { 
+      ; If HD is i:\, try with l:\ (hardcoded fix for my external harddrive)
       var %s l $+ $right(%s,$calc($len(%s) - 1))
       var %nf l $+ $right(%nf,$calc($len(%nf) - 1)) 
     } | else { goto del }
@@ -1314,11 +1368,11 @@ alias mp3.equal {
   inc %step.t
   if (%step.t > %steps) { 
     var %s.time $gettok(%s,-1,32)
-    echo -s The first line (the folder?) in %red.file is still valid. The line has lasted for $duration($calc($ctime - $gettok(%s.time,-1,32))) or since $asctime($gettok(%s.time,-1,32),m. mmmm HH:nn:ss yyyy)
+    ; echo -s The first line (the folder?) in %red.file is still valid. The line has lasted for $duration($calc($ctime - $gettok(%s.time,-1,32))) or since $asctime($gettok(%s.time,-1,32),m. mmmm HH:nn:ss yyyy)
     var %s.file $replace($gettok(%s,1,32),$chr(95),$chr(32))
     ; Omgjør understreker til mellomrom
     if ($exists(%s.file)) { 
-      echo -s 10Filen %s.file finnes og kom fra %red.file - Det sies at den  har ventet i $duration($calc($ctime - $gettok(%s.time,-1,32))) or since $asctime($gettok(%s.time,-1,32),m. mmmm HH:nn:ss yyyy)
+      echo -s Filen 3,1 $+ %s.file $+  finnes og kom fra %red.file Det sies at den har venta i 3,1 $+ $duration($calc($ctime - $gettok(%s.time,-1,32))) $+  eller siden 3,01 $+ $asctime($gettok(%s.time,-1,32),m. mmmm yyyy HH:nn:ss) $+ 
       aline @mp3.provided %s.file
       } | else { 
       ; Søk etter mp3en
@@ -1326,7 +1380,7 @@ alias mp3.equal {
       var -s %s.file * $+ $replace($nopath(%s.file),$chr(32),$chr(42)) $+ *
       var -s %search $findfile( [ %step ] , [ %s.file ] , 1)
 
-      if ($exists(%search)) { aline @mp3.provided %search } | else { 
+      if ($exists(%search)) { echo -s Første linje fra %red.file ble funnet og er langt til ( $+ %search $+ ) | aline @mp3.provided %search } | else { 
         echo -s 7DET BLE ALDRI FUNNET
         echo -s %s.file
         goto del
@@ -1349,7 +1403,7 @@ alias mp3.equal {
     if ($chr(95) isin %step) { 
       var %step $replace(%step,$chr(95),$chr(32)) 
       ; echo -s Loop: endret til mellomrom ( $+ %step $+ ) - $exists(%step) 
-      if ($exists(%step)) { goto step.loop } | else { echo -s 4Det hjalp ikke å ta vekk understrekene! }
+      if ($exists(%step)) { goto step.loop }
     }
   }
 
@@ -1365,16 +1419,17 @@ alias mp3.equal {
   var %max2 $lines(data\mp3skip.txt)
   if (%max > %max2) { 
     echo -s 4A line from %red.file has been deleted. (It was " $+ %ba $+ ")
-    echo -s It lasted for $duration($calc($ctime - $gettok(%ba,-1,32))) or since $asctime($gettok(%ba,-1,32),m. mmmm HH:nn:ss yyyy)
+    echo -s It lasted for04 $duration($calc($ctime - $gettok(%ba,-1,32))) or since04 $asctime($gettok(%ba,-1,32),m. mmmm yyyy HH:nn:ss)
   }
 
   inc %red | goto second
+
 
   :continue
 
   ; aline @MP3.provided $read(data\mp3skip.txt,1)
 
-  ; TODO - hente inn fil fra @mp3eq7 - ferdig-kalkulerte filer
+  ; TODO - hente inn fil fra @mp3eq8 - ferdig-kalkulerte filer
 
   echo -s Det er $line(@MP3.provided,0) filer i @MP3.provided
 
@@ -1444,17 +1499,27 @@ alias mp3.equal {
   var %div $find.div($remove(%a,"))
   if (%div !isnum) { 
     ; Div fantes ikke ( %div )
+    ; TODO - finne div'en med FLEST linjer istedenfor, fordi, når det lages nye divisjoner, så vil linjenummeret der være vesentlig lavere, 
+    ; noe som fører til at laveste div får "halvt" poeng. Noe som fører til at de før økt sjanse for å bli spilt, 
+    ; så jeg vet ikke om jeg skal lage det eller ikke... 11.21.2005
+
     var %div $low.div
     ; If the mp3 is unranked, take the lowest div and find the maximum number of lines and presume (assume) the rank is that
     ; If a div was just created, it will contain fewer files than other divs...
     ; echo -s Finne div av lines av div (div: %div $+ )
     var %rank $lines(data\div\div $+ %div $+ .txt) 
+
+    ; TESTING
+    var %rank 000
+
     } | else {
     var %rank = $gettok($strip($showdiv2( $find.div($remove(%a,")) , @div3- $+ %div , $nopath($remove(%a,"))).return),2,32)
     if (%rank == av) { 
       ; rank er av - finne fra max antall linjer i %div 
-      ; alias showdiv2 er brukt, men vil returnere "rank = av" hvis vinduet ikke er loadet. Vil ikke loade det, siden det vil bjort det før eller senere
+      ; alias showdiv2 er brukt, men vil returnere "rank = av" hvis vinduet ikke er loadet. Vil ikke loade det, siden det vil gjort det før eller senere
       var %rank $lines(data\div\div $+ %div $+ .txt) 
+      ; TESTING
+      var %rank 000
     }
   }
 
@@ -1478,6 +1543,22 @@ alias mp3.equal {
 
   aline @mp3eq6 %rate %a
 
+  ; Div 1 får større presedens enn div 2 osv
+
+  var %div $find.div(%a)
+  if (%div == null) {     
+    var %low.divs $low.div
+    var %low.div $gettok($low.div2,1,32)
+    var %low.div.files $gettok($low.div2(show),2,32)
+    echo -s mp3.equal: Skriver  $+ %a $+  til div $+ %low.div (fordi det er færrest filer der - %low.div.files mp3er - av %low.divs divs))
+    write data\div\div $+ %low.div $+ .txt %a
+    var %div %low.div
+  }
+  if ($len(%div) == 1) { var %div 00 $+ %div }
+  if ($len(%div) == 2) { var %div 0 $+ %div }
+
+  aline @mp3eq7 %div %a
+
   goto eq.loop
 
   :pick
@@ -1485,8 +1566,11 @@ alias mp3.equal {
 
   ; 1=Minimum, 2=Maximum, 3=Random
   var -s %eq.mode2 $mp3.eq.min.max
-  echo -s Force it to method 1 due to missing code for method 2 and 3 (2 should be easy, just take from the opposite) (3 should be easy, just take the random one)
-  var -s %eq.mode2 1
+  ; TODO Force it to method 1 due to missing code for method 2 and 3 (2 should be easy, just take from the opposite) (3 should be easy, just take the random one)
+  ; var -s %eq.mode2 1
+  if (%eq.mode2 == 1) { echo -s eq.mode is 1 (taking care of the new files) }
+  if (%eq.mode2 == 3) { echo -s eq.mode is 3 (picking the random ones :) ) }
+
   if (!%eq.mode2) { echo -s ERROR! eq.mode2 finnes ikke | write data\options.txt mp3.eq.min.max 1 | var %eq.mode2 1 }
 
   if (%eq.mode2 == 1) { 
@@ -1531,7 +1615,6 @@ alias mp3.equal {
           var %f $lines(data\mp3.txt)
           echo -s Linje %c fjernet. Linjer før: %e Linjer nå: %f
         }
-        echo -s Her prøvde vi på igjen før i tida, midlertidig tatt vekk (kommentert vekk)
         .timerTryAgain -m 1 1 { mp3play } | halt
       } | else { var %raw.pick2 $replace(%raw.pick2,$chr(44),*) }
     }
@@ -1547,7 +1630,7 @@ alias mp3.equal {
     }
 
     if ($chr(42) isin %raw.pick2) { 
-      var %raw.pick $remove( [ %raw.pick ] , $chr(42) )
+      var %raw.pick $remove( [ %raw.pick2 ] , $chr(42) )
       findfilekomma $gettok( [ %raw.pick2 ] ,2-,32) 
       return 
     }
@@ -1657,7 +1740,7 @@ alias mp3.equal {
 
       if (!%plass) { echo -s Ingen plass funnet. Inneholder %lowest2 en komma, kanskje? Fjerne den fra data\mp3.txt kanskje? }
       echo -s 3Lowest i div 03 $+ %lowest.div $+  ( $nofend($nopath(%lowest2)) ) kom på en03 %plass $+ . plass i køen av %eq MP3er - pts: %pts - antall spilt: %antall / %f2 / $gettok($line(@mp3eq,$line(@mp3eq,0)),1,32) - Sist spilt: %siden / %f / $gettok($line(@mp3eq2,1),2,32)
-      if (%plass = 1) { echo -s Dette førte til at $nofend($nopath(%lowest2))  ble spilt "raskere" og ruleringa ble "jevnere" }
+      if (%plass = 1) { echo -s Dette førte til at $nofend($nopath(%lowest2))  ble spilt "raskere" og ruleringa ble "jevnere" }
     }
 
     ; Here you can see the trend... (gamle mp3er..)
@@ -1693,7 +1776,6 @@ alias mp3.equal {
       write mp3.trend.txt %datetime %skille %8 %lavest %skille2 %p %skille3 %p2 Max: %11 %skille4 ( $+ %12 $+ ) %13
     }
 
-    mark.eq3 %pick
     mark.eq4 %pick2
 
     var %pick %pick2
@@ -1702,8 +1784,29 @@ alias mp3.equal {
   if (%eq.mode2 == 2) { 
     echo -s Code broken... eh... eq.mode2 ? Hva gjør den? Vi har tatt eqmode2=1, men dette er 2, hva gjorde 1, hva burde 2 ha gjort?
   }
+  if (%eq.mode2 == 3) {
+    var -s %raw.pick = $eq.check3
+    var -s %pick = $gettok($line(@mp3eq4,$rand(1,$line(@mp3eq4,0))),2-,32)
+    mark.eq4 %pick
+    return %pick
+  }
+
   echo -s Code broken i alias mp3.equal - vet ikke hva som skulle ha vært her
   if (!%pick) { echo -a mp3.equal: Fant visst ingen var pick... }
   echo -s Enda mer Code Broken
   return %pick
+}
+
+alias step {
+  ; Used to extract different folderlevels
+  if (!$1) { return no parameter given }
+  if ($2) { var -s %s.b $2 | var -s %s.e $calc($2 + 1) | echo -s Step: Ord %s.b til %s.e } | else { return no second parameter given }
+
+  echo -s alias step mottok: $1-
+
+  var -s %step.1 $gettok($1-,-2,32)
+  var -s %step.s $replace($gettok( [ %step.1 ] ,[ %s.b ] - [ %s.e ] ,92),$chr(95),$chr(42))
+  var -s %step.s2 * $+ $gettok(%step.s,2-,92) $+ *
+  var %root $left($1,3)
+  return $finddir(%root,%step.s2,1)
 }
