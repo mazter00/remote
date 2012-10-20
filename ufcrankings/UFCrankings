@@ -1,0 +1,4978 @@
+; v0.132 <- current version
+
+; BUG
+; Problemer med "check for upcomming events", få ny cachefil!, og så blir den un-enable til å finne kamper?!? (12.09.2010)
+; 02.10.2010: Har nå to forskjellige kalkulasjoner, kan se ut som at det er /ana2 og /ana.calc
+; Jeg blander %wiki.url og %wiki.link omhverandre
+; 18.12.2010: Bug i loopen med å finne interessant events, lagrer feil url.
+
+; TODO
+; Fikse sånn at jeg kan parse fightene i events, både upcomming og passed
+; Bedre UIet - Lage en browser for cardet i første tabben, matchene i andre tabben.
+; Få "ny versjon, vi har en som er 5 dager gammel, relaster"
+;   Kanskje få statistikk også på det også.
+; Få nedtelling til neste stevne i tabben.
+; Stats på fighterne, se når de fighta sist, og hvor ofte i snitt de fighter. Skade står ikke der.
+; Gjøre sånn at jeg kan søke på Fight Night (kjipt når det er neste event.). Forslag: Søke på UFC event nummeret (UFC 159 = Fight Night f.eks).
+; 18.12.2010: I redraw, sjekke no_link mot numtok og se om /ana.calc er blitt kjørt. Hvis ikke, foreslå det (@UFC.queue2?)
+; 18.12.2010: Utvide @UFC.qeue(2) til at jeg kan serie-sjekke fightere.
+; 16.01.2011: .matches i alias ana.box is redudant.
+
+; v0.132 22.01.2011 06:48 Deletes recordfile, if found, on sockclose.
+; v0.131 22.01.2011 11:24 alias checkName was created for checking if no_link was really no_link. If not, replace recordfile with the updated data, also updates the @window
+; v0.130 22.01.2011 02:31 Extended alias ana.extract to find the format for the date. alias ene.calc has been complaining about missing date, due to different formats used in the Wikis.
+; v0.129 21.01.2011 08:38 alias parseOpponent should find wiki and name even if http is found :)
+; v0.128 20.01.2011 06:12 alias createWindow should work as intended...
+; v0.127 20.01.2011 00:35 Created alias maxline, finds the first missing wikilink in a window (%r)
+; v0.126 19.01.2011 19:45 alias createWindow should work with @wiki, @wiki2, @record, @record02, @record02.01 and even @record.02.01.01!
+; v0.125 19.01.2011 08:02 alias createWindow is more flexibel. Avoids @record1 and adds @record08
+; v0.124 19.01.2011 06:29 alias createWindow re-uses empty windows.
+; v0.123 19.01.2011 04:31 Moved all errorchecking into its own alias, alias checkRecord
+; v0.122 19.01.2011 03:50 Several changes in code. From parsing to alias ana.calc. Newest addition is to get name from wikilink (alias data).
+; v0.121 18.01.2011 03:15 Few small fixed in parsing, and correct parsing of Method if it contains a href link inside it.
+; v0.120 17.01.2011 09:33 May have fixed the "Round, Time"-problem.
+; v0.119 17.01.2011 05:12 If not mentioned, alias fillRecord has been created, but now works.
+; v0.118 17.01.2011 05:02 Fixed $el.p, 3 and 4 so parsing redlinks once again works...
+; v0.117 17.01.2011 04:40 Parsing of redlinks should work once again...
+; v0.116 17.01.2011 02:33 Fixed a serious bug in alias findSections. Wasn't providing info about the first match. A errorchecking has been made in alias ana.calc to grab the mistakes.
+; v0.115 17.01.2011 02:00 alias data can now take the argument of recordfile and return the wikifile.
+; v0.114 16.01.2011 10:42 Fixed a bug in alias ana.extract, now really tolerates missing Record-field :)
+; v0.113 16.01.2011 08:54 Computation with "Round, Time" should work.
+; v0.112 16.01.2011 08:19 Now accept "Round, Time" and "Outcome".
+; v0.111 16.01.2011 07:56 Now accepts "Event Title" (just renames it to Event)
+; v0.110 16.01.2011 06:43 alias findSections created. Caches the findings for <tr* and <td* and saves the result in @wiki.tr for later callups (for $getLines)
+; v0.109 16.01.2011 02:05 No longer relies on ana.box or MMA Stats Box at Wikipedia for number of matches. We count them from @wiki outself.
+; v0.108 16.01.2011 00:58 Fixed a bug in alias parseResult. Some work has been done in alias ana.calc, now deletes second "no matches found", and automatically calculates the first line if possible, and populates @record.map (and @record) with colors.
+; v0.107 15.01.2011 00:14 Removed much code from alias ana.calc. This is the alias I'm rewriting now. Due to changes in alias ana.extract, and @wiki, many if-sentences has been removed.
+; v0.106 14.01.2011 08:51 Fixed several small bugs. I feel the new code segment is stable enough to do @wiki > recordfile now. Will start to rewrite alias ana.calc soon.
+; v0.105 14.01.2011 05:35 Fixed a small bug in parseEvent (wiki redlink)
+; v0.104 14.01.2011 04:31 alias parseDate can now convert US times to EU times to get $ctime to do something.
+; v0.103 14.01.2011 02:40 alias parseRound created and few bugs in previous found and fixed.
+; v0.102 14.01.2011 01:39 alias parseDate created.
+; v0.101 14.01.2011 00:47 alias parseMethod created.
+; v0.100 13.01.2011 20:44 alias parseOpponent created.
+; v0.099 12.01.2011 00:00 alias delLines has been created.
+; v0.098 12.01.2011 20:51 alias getElements has been created.
+; v0.097 12.01.2011 20:03 alias createWindow has been created.
+; v0.096 11.01.2011 23:24 alias getLine can accept one missing td-element.
+; v0.095 11.01.2011 21:28 alias getLine can successfully parses out from @wiki and aline @match and take out a line and return it!
+; v0.094 11.01.2011 16:41 Started working on making alias ana.extract even more dynamic, by making all parsin into own aliases. The idea is to make is to dynamic, that it will read various table formats without problem (reading from @wiki)
+: v0.093 09.01.2011 22:33 Fixed an infinite loop in ana.calc, plus random changes elsewhere in the code.
+; v0.092 09.01.2011 19:00 Added ETA in alias ana.extract
+; v0.091 09.01.2011 13:50 Fixed date-extracting in alias ana.
+; v0.090 07.01.2011 18:36 If empty field in ana.extract found, when looking for "time", set to "N/A". 
+; v0.089 07.01.2011 18:26 Added one more errorcheck in alias ana.extract, Method.
+; v0.088 05.01.2011 16:|3 Tried to fix "---" in %elements, tried to fix caching in alias ana.extract.
+; v0.087 05.01.2011 15:13 Added more errorchecking in "Time" (looking for "-")
+; v0.086 02.01.2011 05:16 If No mathces found in alias ana, already write to record-file stating so.
+; v0.085 02.01.2011 04:33 @UFC.log was created in attempt to catch an infinte loop
+; v0.084 02.01.2011 03:54 If empty field in ana.extract found, when looking for "time", insert full round.
+; v0.083 02.01.2011 03:29 Fixed a minor bug in alias ana.extract
+; v0.082 31.12.2010 16:57 ana.calc2, should now take Draw into consideration (only if the scores are the same, typical in no_link with draw as outecome)
+; v0.081 31.12.2010 07:31 In alias ana.calc, tries to load recordfile if no windows are open.
+; v0.080 18.12.2010 14:46 Can now request ana.calc from Redraw.
+; v0.079 18.12.2010 07:30 Now adds %r.file to @ufc.que if the recordfile is not completely calculated (no_file)
+; v0.078 18.12.2010 07:22 Marks if a score should have been calculated in "draw". Line: 3425
+; v0.077 17.12.2010 11:53 Changed alias cleanup. It's *still* a bugfix and doesn't fix the origin of the bug (wrong writes to @-window somewhere)
+; v0.076 17.12.2010 08:50 Fixed a bug in getting the date for an upcomming UFC-event.
+; v0.075 02.12.2010 19:47 Now adds missing wikilink(recordfiles) to @UFC.que aswell...
+; v0.074 01.12.2010 22:59 Added alias cleanup, for cleaning up @wiki -> *.record.txt properly.
+; v0.073 01.12.2010 22:24 Fixed a bug in alias ana.extract, missing %f.wiki if $1 was empty
+; v0.072 01.12.2010 20:18 Fixed a bug in alias ana.events, can now parse again :)
+; v0.071 29.11.2010 16:20 Drawing graph works!!
+; v0.070 28.11.2010 19:22 Pointsgraph. Saves the changes in points. Previously made a loop to show the lines from recordfile. Very raw.
+; v0.069 27.11.2010 19:02 Gathers the valid data before creating the window. Much smarter...! :)
+; v0.068 27.11.2010 18:46 If no recordfile in picture window alias, add line to @UFC.que for queueing...
+; v0.067 25.11.2010 19:29 A better way of updating mouse-coords (it helps reading the helpfile)
+; v0.066 24.11.2010 19:16 alias data now accepts $prop "txt" to find the recordfile from the wikifile.
+; v0.065 24.11.2010 19:16 alias data now accepts $prop "record" to find the recordfile from the wikifile.
+; v0.064 24.11.2010 15:10 Started working on @ufc
+; v0.063 18.10.2010 02:55 alias ana.events uses <tr> instead of inc %block - works :)
+; v0.062 13.10.2010 21:56 For first time, open up @record after @record ('till @record4) and made a calculation based of an empty matches wikipedia!
+; v0.061 13.10.2010 18:24 alias ana.extract now writes "no matches found" if that is a fact, from /wiki and @wiki. Used for ana.calc to pick it up.
+; v0.060 09.10.2010 19:43 Almost created @record3 now :)
+; v0.059 09.10.2010 12:04 Lost some good code in alias ana.calc :( Fixed a writing bug to the recordfile.
+; v0.058 07.10.2010 17:41 Now saves calculations to data\ufc\kalkuleringer.txt for faster computing time :)
+; v0.057 07.10.2010 13:42 Loads a cached file "name.record.txt" instead of making a new @record each time
+; v0.056 07.10.2010 12:51 A minor bug in alias el.p.r has been fixed
+; v0.055 05.10.2010 12:52 When it saves a wikifile to cache in on sockclose, also writes to database.txt
+; v0.054 05.10.2010 11:54 Added alias ana.calc2 - very proud of this alias
+; v0.053 05.10.2010 03:08 Added total number of seconds in @record
+; v0.052 05.10.2010 03:07 Changed %d and %dummy and %dummywiki to %f.wiki and %f.name. Hopefully changed all relevant variablenames.
+; v0.051 04.10.2010 07:13 Now finds the fightername, even if the wikilink was not there. (Plain text)
+; v0.050 04.10.2010 06:43 Now cuts off "Bout" in the dialog.
+; v0.049 04.10.2010 06:25 Fixed a bug, now searching/analyzing List of UFC Events when called upon.
+; v0.048 02.10.2010 01:35 alias ana.calc, will now try to find the motstanders score, if it's already in cache. It will load it to @wiki2. Now finds the appropriate line. Untested with several matches.
+; v0.047 02.10.2010 00:24 alias data, search by name, now returning a random name, and shows how many results.
+; v0.046 01.10.2010 05:37 Fixed a non-breaking bug in alias ana.extract
+; v0.045 01.10.2010 04:47 Added abit more debugging to alias ana
+; v0.044 01.10.2010 04:47 Added more to get3, if no wikilink in the second fighter.
+; v0.043 20.09.2010 00:09 Changed from two tabs to four, now consisting of "Main", "Events", "Fights" and "Debug". AutoReplaced, hope it works.
+; v0.042 30.08.2010 19:13 alias get2 with 4 now works with alternate method.
+; v0.041 27.08.2010 22:59 Added a tab for the list(20). List21 shows extended debug-messages.
+; v0.040 27.08.2010 02:44 The editbox should now work. If num, go for the number. If letter, disable. If empty, check for events.
+; v0.039 27.08.2010 02:29 Added "34" in alias get3, UFC 118 can now be parsed again.
+; v0.038 27.08.2010 02:26 Added "26" in alias get3
+; v0.037 20.08.2010 04:17 Now works with UFC 118 (uncompleted).
+; v0.036 20.08.2010 04:01 Now works with UFC 111 (completed event), but not with UFC 118 (uncompleted). Does not gather info from the match. The "30-27, 30-27, 29-28" also shows there, not in the wikipage for the fighter.
+; v0.035 20.08.2010 01:39 The user can now request a specific UFC event (just UFCxxx, not Fight Night etc). (TODO!)
+; v0.034 20.08.2010 01:08 Now downloads a list of new UFC events, including the last one. Only shows it in the dialog.
+; v0.033 19.08.2010 23:06 Now enables and disables the "Load fighterdata"-button
+; v0.032 18.08.2010 04:32 Now gathers data from the selected fighter... If not selected (default), it uses the previous. I'm letting it stay this way for debugging.
+; v0.031 17.08.2010 23:18 The dialog now shows from which wikilink the stats come from. Want to add the name in plain text.
+; v0.030 17.08.2010 07:43 alias get2 got something extra (14), and alias ana.event tries to find the card...
+; v0.029 16.01.2010 12:54 alias ana, which calultates the score, now works somewhat.
+; v0.028 13.01.2010 15:29 Again, the extraction of Record should work. Now using two different aliases. "v1" is a loopy.
+; v0.027 10.01.2010 09:57 Now extrats all methods, including those with wikilinks in them :)
+; v0.026 10.01.2010 09:32 Replaced the parsing method for grabbing Record. Using loops and $mid and grabs Draws correctly (unless 10+)
+; v0.025 10.01.2010 05:57 Removed "display:none" in @header - new problem occured...
+; v0.024 10.01.2010 03:23 Now adds more fighter to the same format.
+; v0.023 06.12.2009 21:43 Now, again, finds the correct next UFC event
+; v0.022 28.11.2009 22:56 Now finds the correct next UFC event
+; v0.021 21.11.2009 23:43 Now manages to loop through the fightrecord, all figths. One bug and one missing feature.
+; v0.020 19.11.2009 03:23 Now extracts a line (event) from @wiki (from Wikipedia) and alines @record. (Took some time :)
+; v0.019 17.11.2009 23:34 Split alias a.abix into alias extract (for extracting fightrecord)
+; v0.018 15.11.2009 20:08 Split alias ana into alias ana and alias ana.box
+; v0.017 15.11.2009 01:34 The two buttons for "check fighter" now parses the figher and finds the corresponding wikipedia-link. TODO: Begin caching wikipedia pages.
+; v0.016 15.11.2009 01:05 Now parses from list20 and displays the fighters name in the textboxes under. Buttons does not work yet.
+; v0.015 14.11.2009 21:57 Resized the combolist, created a loop that fills all known fighters into it (ID 11). Added two text and two buttons for parsing current event.
+; v0.014 14.11.2009 15:51 And now also correctly extracts the names of the fighters, including %c.link
+; v0.013 14.11.2009 15:46 Now extracts the weight class successfully (alias get3)
+; V0.012 20.09.2009 21:27 Fixed an error in alias get2, now parses for passed events as well.
+; v0.011 19.09.2009 17:47 Created an alias called get2, that parses out < and > in strings.
+; v0.010 19.09.2009 06:16 Added a button for checking events. Planned to show the next event, time to, stats of figters etc. Now also reset id 20 (listbox) when a socket is used.
+; v0.009 30.06.2009 04:12 Added a Stats-box. Adds prelimstats. List-stats are still there.
+; v0.008 30.06.2009 01:31 Can now enter own fighter and gather info from Wikipedia. It does not store. The result, the name, no stats. Lookup does work.
+; v0.007 19.06.2009 02:05 Finally, perfect parsing! mIRC doesn't count empty lines, so strange calculations were made
+; v0.006 17.06.2009 22:44 May find the correct byte in range-request.
+; v0.005 16.06.2009 21:31 Created a dialog (with an exit button). Also added "echo -s" stats for socket(wiki)
+; v0.004 16.06.2009 03:23 Looping through methonds is working fine. Doesn't go though the fightdata.
+; v0.003 16.06.2009 02:47 50 lines removed by creating a loop for finding methods.
+; v0.002 16.06.2009 00:14 A lot of things added. Sockopen, downloading to @windows, parsing to @record. Initial score-system.
+; v0.001 13.06.2009 23:38 Initial
+
+; UFC Rankings - Gathers data from Wikipedia and Sherdog and uses and modified ELO-rating to score the fighters
+; Good for measuring the bets before an event.
+; Or the ranking difference after an event.
+; Or the history of the fighter.
+
+; TODO : 19.09.2009
+; @working - hva brukes den for?
+; 15.11.2009
+; Nå som jeg har kommet til data-analysering, så er det imperativt! at jeg begynner å cache websider.
+
+; WIKIPEDIA
+
+alias wiki {
+  : 15.11.2009 - This seems to be the starting point for wiki requests.
+  ; No need to check for caches here, I think.
+  unset %wiki.cache
+  unset %wiki.source
+  window -c @header
+
+  if ($1 == events) { set %sock.check events | var %txt2 Sjekke for upcoming events... | goto c }
+  if ($1 == event) { echo -s link? (event) %wiki.link | halt | set %sock.check event | var %txt2 Sjekke for et spesifikk event... Wiki.link: %wiki.link ? | goto c }
+
+  if ($1 isnum) { set %sock.check req.event | var %txt2 Sjekke for et spesifikk event... Req fra user ( $+ $1 $+ ) | set -s %wiki.url /wiki/UFC_ $+ $1 | goto c } 
+
+  ; If the request came from the dialog - mark it as such. Used for looking up fighter from the droplist.
+  ; The problem is that the user can do /wiki, and the script won't where the request came from.
+  if ($prop) { set -s %wiki.source $prop }
+
+
+  echo -s Generisk request? -> " $+ $1 $+ "
+  set -s %wiki.url $1
+  :c
+
+  var %txt Prøver å koble til Wikipedia... %txt2
+  echo -s %txt
+  if ($dialog(wiki)) { did -ra wiki 20 %txt | did -a wiki 23 --- | did -a wiki 23 %txt }
+
+  if ($sock(wiki)) { echo -s Socket allerede åpen?! }
+  sockopen wiki www.wikipedia.org 80
+}
+
+on 1:sockopen:wiki:{
+  window -c @wiki
+  window -h @wiki
+  var %f data\ufc\database.txt
+
+  ; The socket is now open, and waiting for input.
+  ; However, we want to find out if we have already cached the page we are about to request.
+
+  set %sockopen $ticks
+
+  ; If set from the sockclose. <- Not fully sure what this means... 20.08.2010
+  echo -s wiki.nocache? > %wiki.nocache <
+  if (%wiki.nocache) { goto nocache }
+
+  echo -s If wiki.url is something ( $+ %wiki.url $+ ), it probably means we already knows what to download
+
+
+  ; TODO - lookup from name to find the wiki link
+  if ($dialog(wiki)) { 
+    var -s %11 $did(wiki,11)
+    if (%11) {     
+      var -s %get $gettok($read(%f,w,* $+ $did(wiki,11) $+ *),1,32)
+      set -s %wiki.url %get
+      } | else { 
+      if (!%wiki.source) {      
+        echo -s No fighter selected, using the previous
+        echo -s 02.10.2010: Bypassing the forced setting of wiki.url
+        set -s %wiki.url %wiki.url  
+      }
+    }
+  }
+
+  if (%sock.check == events) { set -s %wiki.url /wiki/List_of_UFC_events }
+  if (%sock.check == event) { set -s %wiki.url %wiki.eventurl }
+
+  ; Now we have a url we want to download, let's see...
+
+  ; 02.10.2010, vi mikser wiki.link med wiki.url
+  echo -s url: %wiki.url ¤¤¤ link: %wiki.link
+  if (/ !isin %wiki.link) { var -s %wiki.url %wiki.url }
+
+  echo -s wiki.url: " $+ %wiki.url $+ "
+  if (!%wiki.url) { echo -s 4Wiki.url er tom | halt }
+  var -s %w2 $right(%wiki.url,$calc($len(%wiki.url) - 6))
+
+  var %f data\ufc\cache\ $+ %w2 $+ .txt
+  if ($isfile(%f)) { 
+    echo -s Vi *har* allerede en slik fil! >> %f
+    set -s %saved.date $read(%f,7)
+    set -s %wiki.cache yes
+
+    var %txt sockopen wiki success. We have the file; HEAD %wiki.url
+    echo -s %txt
+    if ($dialog(wiki)) { did -a wiki 20 %txt | did -a wiki 23 %txt }
+
+    sockwrite -n wiki HEAD %wiki.url HTTP/1.1
+    sockwrite -n wiki Host: en.wikipedia.org
+    sockwrite -n wiki User-Agent: mIRC/ $+ $version (Windows NT 5.1; N; en)
+    sockwrite -n wiki Accept-Charset: iso-8859-15
+    sockwrite -n wiki Connection: close $+ $CRLF $+ $CRLF
+    goto end
+  } 
+  else { 
+    :nocache
+    unset %bytes.b
+    echo -s Vi har ikke filen, la oss gå på Wikipedia og laste ned 
+    set -s %wiki.cache no
+
+    var %txt sockopen wiki success. GET %wiki.url
+    echo -s %txt
+    if ($dialog(wiki)) { did -a wiki 20 %txt | did -a wiki 23 %txt }
+
+    sockwrite -n wiki GET %wiki.url HTTP/1.1
+    sockwrite -n wiki Host: en.wikipedia.org
+    sockwrite -n wiki User-Agent: mIRC/ $+ $version (Windows NT 5.1; N; en)
+    sockwrite -n wiki Accept-Charset: iso-8859-15
+
+    ; 15.11.2009 - Hvorfor skip? Var det for å ikke cache den gangen?
+    ; if ((%sock.check == events) || (%sock.check == event)) { goto skip }
+
+
+    ; Debugging
+    unset %bytes.b
+    if (%bytes.b) {
+      var %txt sockwrite -n wiki Range: bytes= [ $+ [ %bytes.b ] $+ ] - [ $+ [ %bytes.e ] ]
+      echo -s -> %txt
+      if ($dialog(wiki)) { did -a wiki 20 %txt }  
+      sockwrite -n wiki Range: bytes= [ $+ [ %bytes.b ] $+ ] - [ $+ [ %bytes.e ] ]
+      set %wiki.cache 1
+    }
+    else { 
+      var %txt Førstegangsnedlastning! (eller re-nedlastning?) -> %wiki.nocache <-
+      if (%wiki.nocache) { echo -s Innhold av variabel: " $+ %wiki.nocache $+ " - Dette er en re-nedlastning! }
+      else { echo -s echo -s Innhold av variabel: " $+ %wiki.nocache $+ " - Dette er IKKE en re-nedlastning! FØRSTE! }
+
+      unset %wiki.nocache
+      echo -s %txt 
+      if ($dialog(wiki)) { did -a wiki 20 %txt | did -a wiki 23 %txt }
+    }
+  }
+
+  :skip
+  sockwrite -n wiki Connection: close $+ $CRLF $+ $CRLF
+
+  window -c @wiki
+  window -h @wiki
+  window -h @working
+  :end
+}
+
+on 1:sockclose:wiki: { 
+  echo -s on sockclose
+
+  var %ticks $calc($ticks - %sockopen)
+  var %speed $round($calc($calc($calc($sock(wiki).rcvd / %ticks) * 1000) / 1024),2) kB/s
+  var %txt Socket wiki lukket etter $sock(wiki).to sekunder eller %ticks ticks.
+  var %txt2 Speed:  $+ %speed $+ 
+  var %txt3 Sendt $sock(wiki).sent bytes, mottok $sock(wiki).rcvd bytes.
+  echo -s %txt %txt2 %txt3
+  if ($dialog(wiki)) { did -a wiki 23 $strip(%txt) | did -a wiki 23 $strip(%txt2) | did -a wiki 23 $strip(%txt3) }
+  set %bytes.spent $sock(wiki).rcvd
+
+  ; echo -s Reported content-length: $line(@wiki,8)
+
+  if ($dialog(wiki)) { did -e wiki 16,17 }
+  unset %sock.check
+
+  ; Caching
+  if (!$isdir(data)) { mkdir data }
+  if (!$isdir(data\ufc)) { mkdir data\UFC }
+  if (!$isdir(data\ufc\cache)) { mkdir data\UFC\cache }
+
+  echo -s State of wiki.cache: %wiki.cache
+
+  ; Ikke alltid save, nei!
+  if (%wiki.cache == no) {
+    echo -s Wiki.url: %wiki.url
+    if (: isin %wiki.url) { echo -s 4Feil i filnavnet! | halt }
+    savebuf @wiki data\ufc\cache\ $+ $right(%wiki.url,$calc($len(%wiki.url) - 6)) $+ .txt
+    echo -s 3Saved @wiki to data\ufc\cache\ $+ $right(%wiki.url,$calc($len(%wiki.url) - 6)) $+ .txt
+
+    var -s %search $data(%wiki.url)
+    if (!%search) {
+
+      var %title $fline(@wiki,<title>*,1) 
+      var -s %d $gettok($gettok($line(@wiki, [ %title ] ),1,45),2,62)
+
+      write data\ufc\database.txt %wiki.url %d
+    }
+    goto end
+  }
+
+  if (%wiki.cache == yes) {
+
+    ; TODO: Vise sånn at jeg kan si hvor mye nyere den nye filen er fremfor den gamle.
+    ; Eks: Old document was 5 days old, replacing :)
+
+    echo -s Saved.date: %saved.date
+    var %ny.date $line(@wiki,7)
+    echo -s Nyeste date: %ny.date
+    echo -s Hvis de to er de samme, så kan vi bruke cachen
+
+    if (%saved.date != %ny.date) { 
+      echo -s De er ulike, altså er det en  ny versjon  der ute! Gammel: %saved.date Ny: %ny.date
+
+      var %c $gettok($remove(%ny.date,$chr(44)),2-,32)
+      var %d $gettok($remove(%saved.date,$chr(44)),2-,32)
+
+      var %c1 $ctime(%c)
+      var %c2 $ctime(%d)
+      var -s %diff $calc(%c1 - %c2)
+      echo -s Differansen var på  $duration(%diff,2) 
+
+      var -s %record $data(%wiki.url).record
+      if (%record) { 
+        echo -s Slette %record
+        remove %record
+      }
+
+      set -s %wiki.nocache ny versjon ute! $chr(13) $+ Gammel: %saved.date Ny: %ny.date
+      unset %wiki.cache
+      timer 1 0 { wiki %wiki.url }
+      goto end
+      } | else {    
+      echo -s 3De er nøyaktig like :)
+      echo -s Vi  loader  opp den lagrede cachen til @wiki ( $mircdir $+ data\ufc\cache\ $+ $right(%wiki.url,$calc($len(%wiki.url) - 6)) $+ .txt -> @wiki)
+
+      echo -s %wiki.url
+      if (: isin %wiki.url) { echo -s 4Feil i filnavnet! | halt }
+
+      window -c @wiki | window -h @wiki | loadbuf @wiki $shortfn($mircdir $+ data\ufc\cache\ $+ $right(%wiki.url,$calc($len(%wiki.url) - 6)) $+ .txt)
+      goto end
+    }
+  }
+  :end
+  unset -s %wiki.cache
+}
+
+on 1:sockread:wiki:{
+  if ($sockerr > 0) return
+
+  :nextread
+
+  sockread -n %temp
+
+  if ($sockbr == 0) { 
+    if (%sock.check == events) { .timerana 1 1 { ana.events } | return }
+    if (%sock.check == event) { .timerana 1 1 { ana.event } | return }
+    .timerana 1 1 { ana } 
+    return 
+  }
+
+  if (%temp == $null) { goto nextread }
+
+  aline @wiki %temp
+
+  goto nextread
+}
+
+alias ana {
+  ; Her har vi både byte-analysering og første analysering av fight record.
+  ; Må skilles fra hverandre (todo 15.11.2009)
+
+  echo -s alias ana
+  echo -s Wiki.url: %wiki.url
+
+  write -c wiki.txt
+
+  ; (1/4) Finne antall bytes som serveren mener å ha sendt oss
+  ; Content-length er antall bytes som serveren har sendt oss og maximum av dokumentet
+  ; Content-range viser oss i hvilken range og maximum av dokumentet
+
+  ; I tilfelle range
+  var -s %l1 $fline(@wiki, *Content-Range: bytes*,1)
+  var -s %max.range $gettok($line(@wiki, [ %l1 ] ),2,47)
+  var -s %range $gettok($line(@wiki, [ %l1 ] ),3,32)
+  if (!%range) { echo -s Vi har ikke requesta range, så dette er førstgangsnedlastning (eller kanskje re-nedlastning). TODO: Finne et metode... 30.08.2010 }
+
+  ; Vil alltid sette var
+  var -s %l1 $fline(@wiki, *Content-Length:*,1) 
+  set -s %con.len $gettok($line(@wiki, [ %l1 ] ),2,32)
+
+  var -s %overhead $calc(%bytes.spent - %con.len)
+
+  ; (2/4) Finne slutten av headeren først, og slette headeren (fører til (ikke-lenger)-korrekte bytes-tall)
+
+  if ($gettok($line(@wiki,1),2,32) == 301) { 
+    if ($dialog(wiki)) { did -a wiki 20 Not Found! | did -e wiki 16 }
+    echo -s Not Found 
+    return 
+  }
+
+  echo -s Hvis vi lar være å gjøre dette tullet her da?
+  goto skip
+
+  var -s %h.l $fline(@wiki, *Connection: close*,1)
+  savebuf 1- $+ %h.l @wiki header.txt
+  window -h @header
+  loadbuf @header header.txt
+  .remove header.txt
+  dline @wiki 1- $+ %h.l
+
+  :skip
+  ; (3/4) Derfra finne hvor vi skal begynne å søke (reelle bytes)
+  var -s %l $fline(@wiki, *&#160;matches*,1)
+  if (!%l) { 
+    echo -s Matches ikke funnet. Wikiurl? %wiki.url
+
+    if ($left(%wiki.url,10) == /wiki/UFC_) { echo -s Vi skal ikke søke etter "matches" i slike dokumenter (UFC100), kjører /ana.event | ana.event | return }
+
+    if (%wiki.url == /wiki/List_of_UFC_events) { 
+      echo -s Vi skal ikke søke etter "matches" i slike dokumenter (List of UFC Events), kjører /ana.events
+      timer 1 10 { ana.events }
+      return 
+    }
+    echo -s bytes.b: " $+ %bytes.b $+ "
+    if (%bytes.b) {
+      echo -s Vi har tatt for mye vekk! (Fant ikke "matches" i @wiki) Legger til 100 bytes og prøver igjen (manuelt) 
+      dec -s %bytes.b 100 
+      return 
+    }
+    echo -s 04Ingen matches funnet i dokumentet - $gettok($line(@wiki,1),2,32)
+    var -s %f data\UFC\cache\ $+ $right(%wiki.url,$calc($len(%wiki.url) - 6)) $+ .record.txt
+    if (!$exists(%f)) { write %f No matches found | echo -s "No mathches found" skrevet til %f }
+
+    if ($line(@ufc.que,0) >= 1) {
+      var -s %a $line(@ufc.que,1)
+      if (ana.calc isin %a) { dline @ufc.que 1 | timer 1 0 { ana.calc $gettok(%a,2-,32) } } | else { dline @ufc.que 1 | window -c @record | timer 1 0 { wiki %a } }
+    }
+    goto end
+  }
+
+  echo -s Vi fant vår første linje i linje %l
+
+  ; (4/4) Finne siste nyttige linje
+
+  var -s %s $fline(@wiki, *</table>*,0)
+
+  var %a 0
+  var %b 0
+
+  :tloop
+  inc -s %a
+  var -s %s $fline(@wiki, *</table>*, [ %a ] ) 
+  if (%s < %l) { goto tloop }
+
+  inc %b
+  if (%b < 2) { echo -s Fant tabellslutt i linje %s | goto tloop }
+
+  if (!%s) { echo -s 4Vi har tatt for mye av på slutten! | inc -s %bytes.e %overhead | return }
+  echo -s Hm, hva nå? %l er første og %s er siste?
+
+  echo -s Hvor mange bytes har vi lest unødig?
+
+  echo -s Debug:l: %l
+
+  if (!%wiki.cache) { goto save }
+
+  var -s %edit.b no
+  var -s %edit.e no
+
+  if (%l > 1) { echo -s 4Scriptet bomma litt mye på begynnelsen, kanskje | var -s %edit.b yes }
+  elseif (%s < $line(@wiki,0)) { echo -s 4Scriptet bomma litt mye på slutten, kanskje | var -s %edit.e yes }
+  else { echo -s 3Vi synes dette er godt nok! Fantastisk | goto begynn }
+
+  :save
+  echo -s Saver fra linje 1- $+ $calc(%l - 1) til wiki1.txt
+
+  ; Fra første linje (bodyen) til første treff (minus en linje)
+  savebuf 1- $+ $calc(%l + 1) @wiki wiki1.txt
+
+  var -s %bytes.saved $file(wiki1.txt).size
+  echo -s Unødige bytes: %bytes.saved
+  var -s %saved.linjer $lines(wiki1.txt)
+  echo -s Unødige linjer: %saved.linjer (Kan ha betydning)
+
+  echo -s Nåværende startbyte: %bytes.b
+
+  ; Fra "siste" </table> (to i nyttige tekst) til slutten
+
+  savebuf $calc(%s + 1) $+ - $+ $line(@wiki,0) @wiki wiki2.txt
+
+  var -s %bytes.saved2 $file(wiki2.txt).size
+  echo -s Unødige bytes: %bytes.saved2
+  var -s %saved.linjer2 $lines(wiki2.txt)
+  echo -s Unødige linjer: %saved.linjer2 (Kan ha betydning)
+
+  echo -s Nåværende sluttbyte: %bytes.e
+
+  ; Sette nye verdier  
+
+  echo -s Vi hadde %bytes.saved for mye i begynnelsen, og %bytes.saved2 for mye på slutten
+
+  if (%edit.b == yes) { set -s %bytes.b $calc(%bytes.b + %bytes.saved - %saved.linjer) }
+  if (%edit.e == yes) { set -s %bytes.e $calc(%bytes.b + %con.len - %bytes.saved2 + %saved.linjer2) }
+
+  echo -s Range? %bytes.b - %bytes.e
+
+  echo -s Totalt sparer vi $calc(%bytes.saved + %bytes.saved2 - %saved.linjer - %saved.linjer2)
+
+  :skip2
+  echo -s Ferdig med alias ana, som er til å analysere contentlength og range for framtidig bruk
+  echo -s Caller nå alias "/ana.box %l $+ "
+  ana.box %wiki.url
+
+  :end
+}
+
+alias ana.box {
+  ; Hvis ingen matches funnet (fra alias ana), så vil denne aliasen likevel bli trigget.
+
+  ; Her begynner det?
+  :begynn
+
+  echo -s 1: $1-
+  if ($1- == null) { echo -s halt | halt }
+
+  if (!$prop) && (!$dialog(wiki)) {
+    echo -s Ingen grunn til å kjøre alias ana.box
+    goto end
+  }
+
+  var -s %l $fline(@wiki, *&#160;matches*,1)
+  if (!%l) { goto end }
+  var -s %line $line(@wiki, [ %l ] )
+  var -s %line $gettok(%line,3,62)
+  var -s %matches $gettok(%line,1,38)
+  if ($prop == matches) { return %matches }
+
+  ; Finne antall wins
+  inc %l
+
+  var %line $line(@wiki,  [ %l ] )
+  var %line $gettok(%line,3,62)
+  var %wins $gettok(%line,1,38)
+
+  ; Finne antall losses
+  inc %l
+
+  var %line $line(@wiki,  [ %l ] )
+  var %line $gettok(%line,3,62)
+  var %loss $gettok(%line,1,38)
+
+  var %txt Kamper: %matches Wins: %wins Losses: %loss
+  echo -s %txt
+
+  ; 17.08.2010: Finnes det en måte å vite hvilken fighter man snakker om? -a 30, tenkte jeg på. (Navnet).
+  ; %wiki.url har jo linken, men ingen vars som inneholdet navnet.
+
+  if ($dialog(wiki)) { 
+    did -a wiki 20 $strip(%txt) 
+    did -a wiki 30 Stats for $data(%wiki.url)
+    did -a wiki 32 %matches
+    did -a wiki 34 %wins
+    did -a wiki 36 %loss
+    did -a wiki 38 $round($calc($calc(%wins / %matches) * 100),1) $+ %
+
+  }
+  echo -s $str(-,$strip($len(%txt)))
+
+  ; Standard så langt (har ikke sett noen steder at det ikke er "x matches | x wins | x losses") i "Professional record breakdown"
+
+  ; Incer med 3, så går vi rett på "By knockout" (eller første metoden)
+  inc %l 3
+
+  ; Check
+  ; Knockout, submission, decision, draw (colspan), no contests (colspan)
+  ; TODO - gjøre dette i en loop
+
+  ; Lager array av mulige "metoder"
+  ; Colspan er når det "spanner" over to celler, f.eks når det ikke kan vises om klar "Win/Loss" (no contest)
+  var %method knockout.submission.decision.draw.no contests
+  var %method.colspan n.n.n.y.y
+
+  var %m.c 0
+
+  :loop
+
+  inc %m.c
+  var -s %method.now $gettok(%method, [ %m.c ] ,46)
+  var -s %methodcol.now $gettok(%method.colspan, [ %m.c ] ,46)
+  if (!%method.now) { echo -s Metodene er oppbrukt, nå går vi igjennom fightrecord | goto c }
+
+  var -s %line $line(@wiki,  [ %l ] )
+  ; Vi sjekker ikke for om vi er ferdig med relevant tekst, siden vi vil oppføre "no contest" også. Eller?
+
+
+  if (%method.now isin %line) { 
+    echo -s %method.now funnet i %line
+
+    inc %l
+
+    var %line $line(@wiki,  [ %l ] )
+    var %line $gettok(%line,2,62)
+    var -s %w. [ $+ [ %m.c ] ] $gettok(%line,1,60)
+
+    inc %l 1
+
+    if (%methodcol.now == n) {  
+      var %line $line(@wiki,  [ %l ] )
+      var -s %line $gettok(%line,2,62)
+      var -s %l. [ $+ [ %m.c ] ] $gettok(%line,1,60)
+
+      var %txt Wins by %method.now $+ : %w. [ $+ [ %m.c ] ] Loss by %method.now $+ : %l. [ $+ [ %m.c ] ]
+      echo -s %txt
+      if ($dialog(wiki)) { 
+        did -a wiki 20 $strip(%txt) 
+        ; var %method knockout.submission.decision.draw.no contests
+        ; 32,34,36,38
+        ; %m.c
+
+      }
+    }
+    else { 
+      ; Siden det ikke er klar Win/Loss, så lagrer vi det ikke(?) 17.11.2009
+      var %txt  $+ %method.now $+ : $gettok(%line,1,60) 
+      echo -s %txt
+      if ($dialog(wiki)) { did -a wiki 20 $strip(%txt) }
+    }
+
+    ; Incer bare hvis det er successful, hvis ikke så er vi ferdig her.
+    inc %l 3
+    goto loop
+  }
+
+  ; ?
+  ; Kanskje unødvendig å ha to goto loops her
+  ; Ikke funnet
+
+  var -s %w. [ $+ [ %m.c ] ] N/A (Ikke funnet)
+  var %txt  $+ %method.now $+ : N/A
+  echo -s  $+ %method.now $+ : N/A
+  if ($dialog(wiki)) { did -a wiki 20 $strip(%txt) }
+  goto loop
+
+  ; Finne kampene
+
+  :c
+  inc -s %l 17
+  echo -s Inc med 17
+
+  ; Denne extracker fightrecord -> @record
+
+  echo -s Kampdata ikke funnet, eller ferdig
+  echo -s Matches: %matches
+  echo -s Win:Loss-ratio: $calc(%wins / %loss)
+  echo -s Prosent: $calc($calc(%wins / %matches) * 100)
+
+  ; 04.01.2010: Kjørte /ana2 tidligere...
+
+  :end
+  echo -s Skal til å kjøre "/ana.extract $1- $+ "
+  ana.extract $1-
+
+  ; ana.extract vil alltid kjøre ana.calc
+}
+
+alias ana.extract {
+  ; Hvis denne er called med $1 - så vet vi at @record er oppe, og vi vil ikke ødelegge det
+  echo -s alias ana.extract: $1-
+
+  if ($1 == bypass) { var %bypass True | goto bypass }
+
+  if ($2 == dato) { 
+    echo -s Vi skal finne datoformatet for $1
+    var %recordfile $data($1).record
+    var -s %file $gettok(%recordfile,1,46) $+ .txt
+
+    window -c @wiki | window -h @wiki
+    loadbuf @wiki %file
+  }
+
+  if (/wiki/ isin $1) { var %wiki $1 }
+  var %ti $ticks
+
+  if (!$1-) { 
+    ; Dette er den mest vanlige "call"en
+    ; Anta at @wiki er oppe, og det er den fighteren vi skal extracte.
+    ; Ved å finne navnet, kan vi søke i databasen vår. Dette er en god ting, siden i databasen vår, så har vi beholdt ev. spesialtegn til URLen.
+
+    var -s %s $remove($line(@wiki,$fline(@wiki,<title>*,1)),$chr(44))
+    var %x $numtok(%s,32)
+    var %p $gettok(%s,2,62)
+    var -s %navn $gettok(%p, 1- $calc(%x - 5) ,32)
+    if (fighter isin %navn) { var -s %navn $gettok(%navn,1,40) }
+
+    var -s %fullwiki $data(%navn)
+    var -s %wiki $gettok($data(%navn),1,32)
+    if (%wiki == Found) { echo -s 4Uønsket wikilink i første søk | halt }
+  }
+
+  if (!$window(@UFC.log)) { window -ldo @UFC.log 2500 0 1000 1050 }
+  aline @UFC.log $time "/ana.extract $1- $+ "
+
+
+  ; record er stammen vår, aliasen finner neste ledige og oppretter
+  var -s %r $createWindow(record)
+  if ($window(@wiki.tr)) { window -c @wiki.tr }
+  window -h @wiki.tr
+
+  ; Siden det er recordfile vi skal lage, så finnes ikke recordfile fra før av... Altså, ingenting å loade
+  ; 08.01.11, nå ja, jeg er ikke så sikker. Denne aliasen tar lang tid.
+  ; Å sjekke om det er noe nytt, bortsett for å sjekke om wikifila er ny, kan være en god idé.
+
+  ; Sjekke om det er nødvendig med ny @wiki
+  ; 12.01.11: Vitsen med det? Vi har allerede brukt @wiki
+  ; Burde heller sjekke for om $1- fantes eller noe sånt.
+
+  if (!%navn) { var -s %navn $data(%wiki) | echo -s nanv funnet til å være %navn fra %wiki }
+
+  var -s %title $fline(@wiki,* $+ %navn $+ *,1)
+  var -s %line $line(@wiki,%title)
+  if (%navn isin %line) { 
+    echo -s %navn funnet i %line - vi behøver ikke å lukke @wiki og reloade, 3fordi det er samme wiki! :)
+
+    ; Creating needed variables
+    if (!$1) { var -s %f.wiki %wiki } | else { var -s %f.wiki $1 }
+    var -s %w @wiki
+    goto b 
+  }
+
+  ; Sjekker neste ledige vindu (hvis $1- finnes. Hvis ikke, så er det assmumed at vi bruker @wiki)
+
+  echo -s navn: %navn
+  if (!%navn) { echo -s Vi har ikke noe navn å forholde oss til | halt }
+
+
+  :b
+  echo -s Denne aliasen (/ana.extract) extracter fightrecord fra %w til %r
+
+  var -s %recordfile $data(%wiki).record
+  echo -s $isfile(%recordfile)
+
+  if ($isfile(%recordfile) && (!$2)) { 
+    echo -s 3Load instead of making :) 
+    echo -s Hva er r: %r
+    if ($line(%r,0) > 0) { echo -s %r er ikke tom | halt }
+    loadbuf %r %recordfile
+    goto end2 
+  }
+
+  echo -s 4Recordfile( $+ %recordfile $+ ) ikke funnet, 3extracter... :)
+
+  ; Sjekke om kamper er i @wiki
+  var %l $fline(@wiki, *&#160;matches*,1)
+  if (!%l) { 
+    echo -s Ingen matches funnet (alias ana.extract) 
+    echo -s Husk å skrive at det er "no matches" i recordfila, sånn at f.eks ana.calc kan finne det ut.
+    write -c %recordfile No matches found
+    echo -s Skrevet "No matches found" inn i %recordfile
+    goto end2
+  }
+
+  echo -s 3Fant linja med "matches" inni seg. Det vil være tabellen med oppsummering. Funnet i linje: %l
+
+  ; Delete unnecassry lines in %w (@wiki)
+  if ((%w) && (%l)) { delLines %w %l } | else { echo -s Alle variablene til å foreta en /delLines [n] [n] er ikke til stede. w: %w -- l: %l -- | halt }
+
+  ; Find the <tr>,<td> etc and aline @wiki.tr
+  ; This makes alias getLine much faster
+
+
+  var %findsections $findsections(%w)
+  var -s %fs.1 $gettok(%findsections,1,164)
+  if (%fs.1 != ok) { echo -s Error in FindSections | halt }
+
+  var -s %fs.2 $gettok($gettok(%findsections,2,164),1-,32)
+  set -s %m.x %fs.2
+
+  :bypass
+
+  ; Sette til første og siste linje i %w (@wiki)
+  var %l 1
+  var %l2 $line(%w,0)
+
+  ; Vi har nå funnet toppen av tabellen. %l2 tilsvarer bunnen av tabellen. (Vi begynner fra bunnen og tar oss oppover)
+  ; Først må vi finne ut hva slags tabell vi har. (Ikke lenger så viktig.)
+  ; Det finnes mange forskjellige tabeller :(
+  ; Vi kommer til å aline resultatene inn i @record, som det parses videre derfra. (Hvor? 4.10.10)
+  ; Fra de mange forskjellige, så lager vi altså vår egen standard som vi bruker i @record (Dårlig idé) (11.01.11: God idé, meste brukte = standard)
+  ; 20.08.2010: Standarden burde komme fra den som er mest brukt.
+
+  ; Dette er også en fin plass til å hente ut de forskjellige fighterne å legge de inn i databasen vår.
+  ; Motstanderne, altså... Wikilinkene likeså.
+
+  ; TODO: Selv om vet antall elementer, så er det forskjellig dato-system brukt. 10.01.2010: Men det kan vel dato-parsinga ta seg av? 13.01.11: Pluss fra ctime, vi lager vår egen asctime.
+  ; Alt vi trenger er egentlig en $ctime - datoformat som vi parses, kan vi velge selv. Det gjør ana.calc mye lettere.
+
+  unset %roundtime
+
+  var -s %elements $getElements(%w)
+  if ($numtok(%elements,46) <= 1) { echo -s for få elementer, antagelig en statsline hos Wikipedia | halt }
+
+  if (Event Title isin %elements) {
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (Event Title !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s Event Title ble funnet som %e.a2
+    var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Event $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+  }
+
+  ; Finne RoundTime, metode 1
+  var %str Round, Time
+  if (%str isin %elements) { 
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (%str !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s %str ble funnet som %e.a2
+    var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Round.Time $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+    var %roundtime True
+  }
+
+  ; Finne RoundTime, metode 2
+  var %str Round (time)
+  if (%str isin %elements) { 
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (%str !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s %str ble funnet som %e.a2
+    var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Round.Time $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+    var %roundtime True
+  }
+
+  ; Finne RoundTime, metode 3 (missing Time)
+  if (Time !isin %elements) { var -s %roundtime True | echo -s Missing element "Time", declaring it to be RoundTime from now on | goto roundtime }
+
+  ; Finne RoundTime, metode 4 (missing Round)
+  if (Round !isin %elements) { 
+    var -s %roundtime True 
+    echo -s Missing element "Round", declaring it to be RoundTime from now on 
+
+    ; Whileloop for å erstatte Time med Round
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (Time !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 }
+    echo -s Time ble funnet som %e.a2 - erstatte med Round
+    var -s %sistedel $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+    if (%sistedel) { var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Round $+ . $+ %sistedel } | else { var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Round }
+  }
+
+  :roundtime
+  if (%roundtime) {
+    echo -s Roundtime funnet, tagge elementet hos Fighter...
+
+    var %e.a3 0
+    var %e.x $numtok(%elements,46)
+
+    while (Round !isin $gettok(%elements,%e.a3,46)) { inc %e.a3 | if (%e.a3 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s Round ble funnet som %e.a3
+    echo -s Dette er altså faretaggen
+  }
+
+  if (Outcome isin %elements) {
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (Outcome !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s Outcome ble funnet som %e.a2
+    if (%e.a2 == 1) { var -s %elements Result. $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46) } | else {
+      var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Result $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+    }
+  }
+
+  if (Details isin %elements) {
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (Details !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s Details ble funnet som %e.a2
+    var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Method $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+  }
+
+
+  if (Place isin %elements) {
+    var %e.a2 0
+    var %e.x $numtok(%elements,46)
+
+    while (Place !isin $gettok(%elements,%e.a2,46)) { inc %e.a2 | if (%e.a2 > %e.x) { echo -s %element.now ble ikke funnet | break } }
+    echo -s Place ble funnet som %e.a2
+    var -s %elements $gettok(%elements,1- $+ $calc(%e.a2 - 1),46) $+ . $+ Event $+ . $+ $gettok(%elements,$calc(%e.a2 + 1) $+ -,46)
+  }
+
+
+  if ((http isin %elements) && (persondata isin %elements)) {
+    echo -s 4Massive critical error
+    echo -s MMA Stats Box found, but not the table!
+    if (%recordfile) { write %recordfile No matches found }
+    goto end2
+  }
+
+
+
+
+  ; Tableformats in layouts.txt has been scrapped! :)
+
+  ; 12.01.2011: Vi har %elements, som skal sjekkes mot %r.e (Real Elements, elements som vi bruker og som er i riktig rekkefølge)
+  var -s %r.e Result.Record.Opponent.Method.Event.Date.Round.Time
+
+  ; Lage vars som vi trenger
+  var %ticks $ticks
+  var %m.a 0
+  var %e.a 0
+  var -s %e.x $numtok(%r.e,46)
+
+
+  ; Match-loop
+  :m.loop
+
+  inc -s %m.a
+  if (%m.a > %m.x) { echo -s Ferdig med match loop | goto end }
+
+  echo -s  Beregner kamp %m.a av %m.x kamper 
+
+  ; Element loop
+  :e.loop
+
+  inc -s %e.a
+  if (%e.a > %e.x) { 
+    echo -s Ferdig med element loop ( $+ %e.a > %e.x $+ )
+
+    ; ETA system
+    var %tid.brukt $calc($calc($ticks - %ticks) / 1000))
+    var %gjen $calc(%m.x - %m.a)
+
+    var %eta $calc($calc(%tid.brukt / %m.a) * %gjen)
+    var %total $calc(%eta + %tid.brukt)
+    var %tt TotalTid: %total
+    var %kib $calc(%m.x - %m.a) kamper igjen å beregne.  
+    if (%eta == 0) { var %eta Ferdig! | unset %tt | unset %kib }
+
+    echo -s 8,1 Tatt %m.a av %m.x kamper. %kib Tid brukt: $calc($calc($ticks - %ticks) / 1000) ETA: %eta %tt 
+    ; ETA system end
+
+    echo -s elements: %elements
+    if (Record !isin %elements) { var %missingrecord True }
+
+
+    if (!%exp) { echo -s exp er tom!? " $+ %exp $+ " | halt }
+
+    var %wanted 8
+    if (%missingrecord) { dec -s %wanted }
+    if (%roundtime) {  dec -s %wanted }
+    if ($numtok(%exp,164) < %wanted) { echo -s Feil i aline (få elements), " $+ %exp $+ " inneholder ikke alt? Numtok: $numtok(%exp,164) Wanted: %wanted | halt }
+
+    if ((%m.a == 1) && ($line(%r,0) > 0)) { echo -s %r er ikke tom | halt }
+
+    ; I bruk for :bypass
+    if (!%r) { var %r @record }
+    if (!$window(@record)) { window -h @record }
+
+    if (error isin %exp) { 
+
+      : False Positive :)
+      if (terror isin %exp) { goto aline }
+      echo -s error funnet i linja som skal alines
+      echo -s " $+ %exp $+ "
+      halt
+    }
+
+    if (a href isin %exp) { 
+      echo -s "a href" funnet i linja som skal alines
+      echo -s " $+ %exp $+ "
+      halt
+    }
+
+    if (http:// isin %exp) { 
+      echo -s "http://" funnet i linja som skal alines
+      echo -s " $+ %exp $+ "
+      halt
+    }
+
+    :aline
+    aline %r %exp
+
+    if (%m.a != $line(%r,0)) { echo -s %r har ulike antall linjer - vi behandlet kamp nr. %m.a - men det er $line(%r,0) linjer i %r | halt }
+
+    var -s %e.a 0
+    unset %exp
+    goto m.loop 
+  }
+
+  echo -s Elements fra fighter: %elements
+  :e2
+  var %element.now $gettok(%r.e, [ %e.a ] ,46)
+
+  echo -s Elements fra fasit: %r.e
+
+  echo -s Element fra fasit: %element.now
+
+  ; 1 = Fasit, 2 = Fighter
+  var %e.a2 1
+  while (%element.now != $gettok(%elements,%e.a2,46)) { 
+    inc %e.a2 
+    if (%e.a2 > %e.x) { 
+      echo -s %element.now ble ikke funnet 
+      if (%element.now == Record) { echo -s Dette godtar vi og fikser det senere | unset %e.a2 | inc -s %e.a | goto e2 } 
+      if ((%element.now == Time) && (%roundtime)) { echo -s Dette godtar vi FORDI roundtime finnes og bryter ut av loopen | unset %e.a2 | inc -s %e.a | goto e.loop } 
+    } 
+  }
+
+  echo -s 12Element %e.a ( $+ %element.now $+ ) fra fasit, ble funnet som %e.a2 hos fighter
+  if (%e.a != %e.a2) { echo -s 3Takket være dynamisk scripting, så virker dette! }
+
+  ; Hvis RoundTime finnes, og i Fighterens elementliste, hvis "Date" er etter Time, minus 1 på %e.a2
+  ; Problemet kan forekomme uansett, men Date er triggeren her
+
+  if (%roundtime) {
+    echo -s 7Fare! Element er %e.a2 vs %e.a3 og roundtime er på ( $+ %roundtime $+ )
+
+    if (%e.a == 8) { 
+      echo -s Round har allerede funnet ut av Time, og Time er den siste - hopper over.
+      goto e.loop
+    }
+
+    echo -s 1: %e.a 2: %e.a2 3: %e.a3
+    if ((%e.a < %e.a2) && (%e.a2 >= %e.a3)) { 
+      echo -s 4Faren bekreftet 1: %e.a 2: %e.a2 3: %e.a3
+      var %e.a22 %e.a2 
+      dec -s %e.a2 
+    }
+  }  
+
+
+
+
+  var -s %line $getLine(%m.a,%e.a2)
+  if ((%roundtime) && (%e.a22)) { echo -s 3Gjenoppretter | var -s %e.a2 %e.a22 | unset %e.a22 }
+  if (!%line) { 
+    echo -s Line finnes ikke?! 
+    goto e.loop
+  }
+
+  if (%element.now == Result) { 
+    var -s %parse $parseResult(%line)
+    var -s %ex $gettok(%parse,1,164)
+    if (%ex == null) { echo -s null i parseResult funnet | var %e.a 0 | goto m.loop }
+    if (%ex == false) { echo -s false i parseResult funnet | goto m.loop }
+    goto exp
+  }
+
+  if (%element.now == Record) { 
+    var -s %parse $parseRecord(%line)
+    if (error !isin %parse) {
+      var -s %ex %parse
+      goto exp
+    } | else { echo -s Feil funnet | halt }
+  }
+  if (%element.now == Opponent) { 
+    var -s %parse $parseOpponent(%line)
+    var -s %ex $gettok(%parse,1,164) $+ $gettok($gettok(%parse,2-,164),1-,32)
+    if (redlink isin %ex) { echo -s redlink funnet i parse | halt }
+    if (http isin %ex) { echo -s http funnet i parse | halt }
+    goto exp
+  }
+
+  if (%element.now == Method) { 
+    var -s %parse $parseMethod(%line)
+    var -s %ex $gettok(%parse,1,164)
+    var -s %c $gettok($gettok(%parse,2,164),1,32)
+    if (%c == ok) { goto exp } | else { halt }
+  }
+
+  if (%element.now == Event) { 
+    var -s %parse $parseEvent(%line)
+    var -s %ex $gettok(%parse,1,164)
+    var -s %c $gettok($gettok(%parse,2,164),1,32)
+    ; Feel we have tested it enough, accepts "ikke"
+    if ((%c == ok) || (%c == ikke)) { goto exp } | else { halt }
+  }
+
+  if (%element.now == Date) { 
+    var -s %parse $parseDate(%line)
+    var -s %ex $gettok(%parse,1,164)
+    var -s %c $gettok($gettok(%parse,2,164),1,32)
+    if ($2 == dato) { 
+      echo -s ana.extract, dato i 2, halt, men senere finne ut av formatet 
+      var -s %return $gettok($gettok(%parse,2,164),-1,32)
+      return %return
+    }
+    if (ok isin %c) { goto exp } | else { echo -s Feil i retur fra parseDate | halt }
+  }
+
+  if (%element.now == Round) { 
+    if (%roundtime) { var -s %parse $parseRound(%line).roundtime | echo -s parseround with roundtime! }
+    var -s %parse $parseRound(%line)
+    if ($numtok(%parse,32) == 1) {
+      var -s %ex $gettok(%parse,1,164)
+      goto exp
+    } 
+    if ($gettok($gettok(%parse,3,164),1-,32) == RoundTime) {
+      echo -s RoundTime Mottatt
+      var %roundtime True
+      var %ex $gettok(%parse,1-2,164)
+      goto exp
+    }
+    echo -s ParseRounde lot seg ikke evaluere | halt
+  }
+
+  if (%element.now == Time) { 
+    var -s %parse $parseTime(%line,%exp)
+    if (ok isin $gettok(%parse,2,164)) {
+      var -s %ex $gettok(%parse,1,164)
+      goto exp
+    } 
+  }
+
+
+  echo -s Ukjent Element: " $+ %element.now $+ "
+  halt
+
+  :exp  
+  if (!%ex) { echo -s Ingenting?! Dette må vi se nærmere på | halt }
+
+  if (%roundtime) {
+    echo -s exp:roundtime
+  }
+
+
+  if (!%exp) { var -s %exp %ex } | else { var -s %exp %exp ¤ %ex }
+  echo -s Innhold av exp er nå: " $+ %exp $+ "
+  goto e.loop 
+
+
+  goto loopy
+
+  :end
+  echo -s Vi er 3fullstendig ferdig med å sette alt fra @wiki inn i @record. ( $+ %w -> %r $+ )
+
+  echo -s Før vi lagrer fra %r til %recordfile $+ , er missingrecord sann? " $+ %missingrecord $+ "
+  if (%missingrecord) { echo -s Dette må vi gjøre noe med! | fillrecord }
+
+  echo -s Før vi sjekker, stemmer kampantallet?
+
+  echo -s ---
+  var -s %1 $line(%r,1)
+  var %1 $gettok($gettok(%1,2,164),1-,32)
+
+  ; Replace    
+  if ($chr(45) isin %1) { var -s %1 $replace(%1,$chr(45),+) }
+  if ($chr(8211) isin %1) { echo -s Unicode funnet | var -s %1 $replace(%1,$chr(8211),+) }
+  if ($chr(40) isin %1) { echo -s Parantes funnet | var -s %1 $replace(%1,$chr(40),+) | var -s %1 $replace(%1,$chr(41),+) }
+
+  var -s %1 $calc($gettok(%1,1,43) + $gettok(%1,2,43) + $gettok(%1,3,43) + $gettok(%1,4,43))
+  if (%1 != 1) { 
+    echo -s FITTEGALT!
+    halt
+  }
+  echo -s --- ok :) ---
+
+  if (%bypass) { echo -s Bypass, halt | halt }
+
+  savebuf %r %recordfile
+  echo -s Saved %r til %recordfile
+
+  unset %m.x
+
+  echo -s Ferdig med %wiki som tilhører %navn som varte i totalt $calc($calc($ticks - %ti) / 1000) sekunder, beregningsloopen varte i %total sekunder.
+
+  :end2
+
+  aline @UFC.log $time /ana.calc %recordfile
+
+  var -s %last $gettok($line(@UFC.log,$line(@UFC.log,0)),2-,32)
+  var -s %tredj $gettok($line(@UFC.log,$calc($line(@UFC.log,0)-2)),2-,32)
+  if (%last == %tredj) { echo -s Infinite Loop | halt }
+
+  if ($line(@ufc.que,0) >= 1) {
+    var -s %a $line(@ufc.que,1) 
+    if (ana.calc isin %a) { dline @ufc.que 1 | timer 1 2 { ana.calc $gettok(%a,2-,32) } } | else { dline @ufc.que 1 | window -c @record | timer -o 1 2 { wiki %a } }
+  } | else { echo -s 1,9 Ferdig med å tømme @UFC.que  | timer 1 6 { ana.calc %recordfile } }
+
+
+}
+
+; Aliaser under er brukt i alias ana.extract
+
+alias createWindow {
+  ; Finner første ledige vindu og oppretter og returnerer vindunavnet
+  ; Usage: "record"
+  ; Accepts: Both format
+  ; Output: If wiki, create @wiki, @wiki2
+  ; If record or @record2, create: @record02 and @record02.04 etc.
+
+  if (!$1-) { echo -s alias createWindow: 1 ikke mottatt | return null }
+
+  var %w $1
+
+  if ($left($1,1) != @) { var %w @ $+ %w }
+  var %w.ba %w
+
+  var %num 0
+
+  ; Manuell sjekk om requested vindu er tomt (Fordi vi har @w, @w2, @w3 osv)
+  if (!$window(%w)) { window -h %w | return %w }
+
+  ; Find base
+  var %a 1
+  while ($right($1,%a) isnum) { inc %a }
+  if (%a == 1) { var %stamme %w | var %clean clean | echo -s goto stamme | goto stamme }
+
+  echo -s Mottat "stammeNN" - Finner stamme og endetall
+  dec %a
+  var -s %num $right(%w,%a)
+  var %num.ba %num
+
+  var %a $calc($len(%w) - %a)
+  var -s %stamme $left(%w,%a)
+
+  if (record isin %stamme) {
+    echo -s Vi er i en situasjon hvor vi har mottatt $1 - med endetall, som tilsier at vi skal lage $1 $+ .01
+
+    echo -s $1 -> %w + %num
+
+    var %num 00
+    :loop3
+    inc %num
+
+    if ($prop == same) {
+      ; var %num %num.ba
+      if ($len(%num) == 1) { 
+        var %num 0 $+ %num 
+        var -s %w %w.ba $+ %num 
+      } | else { var %w %w.ba $+ %num  }
+
+      } | else {
+
+      if ($len(%num) == 1) { 
+        var %num 0 $+ %num 
+        var -s %w %w.ba $+ . $+ %num 
+      } | else { var %w %w.ba $+ . $+ %num  }
+    }
+
+    echo -s Proposed w: %w
+    if ($window(%w)) { echo -s Vinduet %w eksisterer | goto loop3 } | else { goto opprette }
+
+    goto loop3
+  }
+
+
+
+
+  :stamme
+  echo -s Stamme funnet: %stamme Num er: %num Clean: %clean
+
+  ; Sjekker neste ledige vindu - setter denne til 1, "før-loopen" vil ince den til 2 (as intended)
+  var %num 1
+
+  ; For wiki
+  if (wiki isin %stamme) {
+    :loop
+    inc %num
+    var %w %stamme $+ %num
+    if ($window(%w)) { goto loop }
+
+    ; Unngå @wiki1
+    if (%num == 1) { goto loop }
+  }
+
+  ; For record
+  if (record isin %stamme) {
+    echo -s Stammerecord - w: %w clean: %clean
+    :loop2
+    inc -s %num
+
+    if ($len(%num) == 1) { 
+      var %num 0 $+ %num 
+      var -s %w %stamme $+ %num 
+    } | else { var -s %w %stamme $+ %num }
+
+    if ($window(%w)) { echo -s %w fantes goto | goto loop2 }
+
+    ; Unngå @record1
+    if ((%num == 1) || (%num == 01)) { goto loop2 }
+  }
+
+  if ($prop == force) {
+    ; Sjekker om forrige vindu er tom (i debuggingtilfeller)
+    dec %a
+    var %w2 %w $+ %a
+    if ($line(%w2,0) == 0) { echo -s resirkulering | return %w2 }
+  }
+
+  ; Oppretter vindu
+  :opprette
+  echo -s Oppretter %w
+  window -h %w
+  return %w
+}
+
+alias delLines {
+  ; echo -s Finne neste/nærmeste </table>
+  ; Innholdet her vil allerede ha vært extractet av alias ana.box, det vi vil ta for oss er tabellen under som inneholder fightrecord.
+  var -s %w $1
+  var -s %l $2
+
+  var %at 1
+
+  while ($fline(%w,</table>, [ %at ] ) < %l) { inc %at }
+
+  var %l $fline(%w,</table>, [ %at ] )
+  inc %at
+  var %l2 $fline(%w,</table>, [ %at ] )
+
+  ; Sletter unødige linjer i %w (@wiki)
+  dline %w $calc(%l2 + 1) $+ - $+ $line(%w,0)
+  dline %w 1 $+ - $+ %l
+}
+
+alias findSections {
+  if (!$1) { return null }
+  var %w $1
+  if (!$window(%w)) { return error - vindu %w ikke åpen }
+  var %w2 @wiki.tr
+  if ($window(%w2)) { window -c %w2 }
+  window -h %w2
+
+  ; Finne x-verdier
+  var %x $line(%w,0)
+  var -s %tr.x $fline(%w,<tr*,0)
+
+  var %kamp 1
+  var %element 1
+  var %kampy 0
+
+  :kamp
+  if (%kampy < %tr.x) {
+    var %tr $calc(%tr.x - %kampy)
+    var %tr.ln $fline(%w,<tr*,%tr)
+
+    :el
+    var %tr.line $line(%w,$calc(%tr.ln + %element))
+    ; echo -s 3: $left(%tr.line,3)
+    if (<td == $left(%tr.line,3)) { 
+      aline %w2 %kamp $+ . $+ %element $calc(%tr.ln + %element)
+      inc %element
+      goto el
+    } | else { var %element 1 | inc %kampy | inc %kamp | goto kamp }
+  }
+
+  dec -s %tr.x
+  return ok ¤ %tr.x
+}
+
+alias getElements {
+
+  var %w $1
+
+  if ((!$1) && ($window(@wiki))) { var %w @wiki } | elseif (!$1) { echo -s alias getElements: Ingen 1 mottatt | return error }
+
+  var %x $calc($fline(%w,</tr>,1)-1)
+
+  var %a 2
+  ; Method
+  var %d 2
+
+  :loop
+  inc %a
+  if (%a > %x) { goto end }
+
+  var %b $line(%w,%a)
+
+  :second
+  var %c $el.p(%b,%d)
+
+  ; Errorchecking
+  if (%c == --- 2) { var %d 1 | goto second }
+  if (%d == 1) { var %d 2 }
+
+  ; Sett inn
+  if (!%elements) { var %elements %c | goto loop } | else { var %elements %elements $+ . $+ %c }
+  goto loop
+
+  :end
+  return %elements
+}
+
+alias getLine {
+  ; Alltid anta at vinduet er @wiki
+  echo -s alias getLine: $1-
+
+  echo -s Vi skal nå finne element " $+ $1 $+ . $+ $2 $+ "
+
+  var %aa %a
+
+  var %string $1 $+ . $+ $2
+  var %test $fline(@wiki.tr, [ [ %string $+ ] * ] ,1)
+  var %line $line(@wiki.tr,%test)
+  var %line $gettok(%line,2,32)
+  var %line $line(@wiki,%line)
+  if (%line) { return %line } | else { return null }
+}
+
+alias parseResult {
+  ; En slik alias skal sjekke for om output er korrekt før det sendes vekk.
+  echo -s alias parseResult: $1-
+
+  if ($1- == <td></td>) { echo -s return null | return null }
+  if ($1- == <td align="center"></td>) { echo -s return null2 | return null }
+
+
+  var -s %b $el.p($1-,1)
+  if (display isin %b) { var -s %b $el.p($1-,2) }
+  if ((%b == z) || (%b == x) || (%b == y)) { var -s %b $gettok($gettok($1-,-1,62),1,60) | return %b }
+
+  ; Errorchecking for Wikipedia
+  if ($right(%b,1) == $chr(124)) { echo -s hm | var -s %b $remove(%b,$chr(124)) }
+
+  ; Wikipedia error
+  if (%b == Lose) { var -s %b Loss }
+
+  if ((%b == Win) || (%b == Loss) || (%b == Draw) || (%b == NC) || (%b == No Contest)) { return %b } | else { echo -s false | return false }
+}
+
+alias parseRecord {
+  ; En slik alias skal sjekke for om output er korrekt før det sendes vekk.
+  echo -s alias parseRecord: $1-
+
+  var -s %b $el.p($1-,1)
+  var %b2 %b
+
+  if ((NC isin %b) && ($chr(40) !isin %b) && ($chr(41) !isin %b)) {
+    echo -s NC found, reverting back to the standard: 1-2-3 (4)
+    if ($gettok(%b,3,32) == NC) { var -s %b $remove($gettok(%b,1,32) ( $+ $gettok($gettok(%b,-2,32),1,32) $+ ),$chr(44)) | var %b2 %b }
+  }
+
+  ; NC funnet uten paranteser
+  if (NC isin %b) { var -s %b $remove(%b,N,C) }
+
+  if (- isin %b) { var %b $remove(%b,-) }
+  if ($chr(8211) isin %b) { var %b $remove(%b,$chr(8211)) }
+  if ($chr(40) isin %b) { var %b $remove(%b,$chr(40)) }
+  if ($chr(41) isin %b) { var %b $remove(%b,$chr(41)) }
+  if ($chr(32) isin %b) { var %b $remove(%b,$chr(32)) }
+
+  if (%b == Win) { echo -s Det er en feil i Wikipedia hvor Record og Result har skifta plass! | return error wikipedia }
+  if (%b isnum) { var %c isnum | var %ex %b2 } | else { echo -s Simple metoden hjalp ikke i alias parseRecord... " $+ %b $+ " | halt }
+
+  return %b2
+}
+
+alias parseOpponent {
+  echo -s alias parseOpponenet: $1-
+
+  var %b $1-
+
+  ; 10.01.2010: Tror det er meninga at c skal gi wikilink og d skal gi navnet
+
+  ; Få ut wikilinken
+  var -s %c $el.p(%b,3)
+  echo -s Returnert(c): %c
+
+  if ((%c == Japan) && (redlink isin %b)) { goto brute }
+
+  if ((%c == United States) && (redlink isin %b)) { 
+    :brute
+    var -s %c no_link
+    var -s %d $gettok($gettok($gettok($gettok($1-,-1,34),1,62),1,60),1-,32)
+    if (%d == /) { var -s %d $gettok($gettok($gettok($gettok($1-,-1,34),4,62),1,60),1-,32) }
+    goto feil
+  }
+
+  ; Men derimot, hvis "Land" er og IKKE redlink er inni, så har vi faktisk en wikilink inni der! :)
+
+  if ((%c == United States) && (http isin %b) || (%c == United States) && (http isin %b)) {
+    echo -s Land funnet og http funnet
+    var -s %c $gettok($gettok(%b,-4,34),1,34)
+    var -s %d $gettok($gettok(%b,-2,34),1,34)
+    if (/wiki/ isin %c) { goto feil } | else { echo -s parseopponent failed likevel :( | halt }
+  }
+
+  if ($left(%c,3) == /w/) { echo -s 4Fighteren har ikke en wiki-link! | var -s %c no }
+
+  ; Reservetest
+  if (/w/ isin %c) { echo -s Failed test | halt }
+
+  if (!%c) {
+    var -s %e $el.p($1-,1)
+    if (a href isin %e) {
+      var -s %c $gettok(%e,2,34)
+      var -s %d $gettok(%e,4,34)
+      if (%d == new) { var -s %c no_link | var -s %d $gettok($gettok($gettok($gettok($1-,-1,34),1,62),1,60),1-,32) }
+      goto feil
+    }
+  }
+
+  ; Få ut navnet
+  var -s %d $el.p(%b,4)
+  echo -s Returnert(d): %d
+  if (page does not exist isin %d) { 
+    echo -s Stripper ut navnet
+    var -s %d $gettok(%d,1,40)
+  }
+
+
+  :feil
+  ; Feilsjekk
+  if (!%c) { echo -s Feil 1 - Wikilink ikke funnet | var -s %c no }
+  if (!%d) { 
+    var -s %d $el.p(%b,7)
+    if (!%d) { echo -s Feil 2 - Fighternavn ikke funnet | halt }
+  }
+
+  echo -s Status av c: %c
+  if (%c != no) { var -s %ex %c %d } | else { var -s %c no_link }
+
+  if ((/wiki/ isin %c) && (%d)) {
+    var -s %dummy $data(%c,%d)
+  }
+
+  if (%dummy == written) { echo -s 3Vi fant en ny fighter! :) | halt }
+
+  ; 13.01.2011: Ikke sikkert at denne trengs...
+  if (fighter isin %d) { echo -s "Fighter" funnet i %d | var -s %d $gettok(%d,1,40) }
+
+  ; Wikilink ¤ navn
+  return %c ¤ %d
+}
+
+alias parseMethod {
+  echo -s alias parseMethod: $1-
+
+  if (($numtok($1-,60) == 2) && ($numtok($1-,62) == 2)) { echo -s Shorthand! | var %b $el.p($1-,1) | return %b ¤ ok }
+
+  var -s %b $el.p($1-,1)
+  if (%b == N/A) { return Decision (N/A) ¤ ok }
+
+  if ($right(%b,1) == $chr(40)) { return %b $+ $el.p($1,2) $+ $chr(41) ¤ ok }
+
+  if (- isin %b) { var -s %b $remove(%b,-) }
+  if (&amp; isin %b) { var -s %b $replace(%b,&amp;,&) }
+  if (/ isin %b) { var -s %b $remove(%b,/) }
+  if ($chr(44) isin %b) { var -s %b $remove(%b,$chr(44)) }
+
+
+  if (a href isin %b) { 
+    echo -s a href found
+    var -s %d $gettok($gettok($1-,2,62),1,40) $gettok($gettok($1-,3,62),1,60)
+    if (a href isin %d) { 
+      echo -s Fortsatt feil i parsemethod, a href funnet 
+      var -s %d dummy $+ $gettok($1-,-1,34)
+      var -s %e $el.p(%d,1)
+      var -s %f $el.p(%d,2)
+      var -s %d %e %f
+    }
+    return %d ¤ ok
+  }
+
+  echo -s $numtok(%b,40)
+  echo -s $numtok(%b,41)
+
+  if (($numtok(%b,40) == 2) && ($numtok(%b,41) == 1) || ($numtok(%b,40) == 1) && ($numtok(%b,41) == 1)) {
+    var -s %c $remove(%b,$chr(40))
+    var -s %c $remove(%c,$chr(41))
+
+    echo -s %c
+    echo -s numtok av c: $numtok(%c,32)
+
+    if ($chr(32) isin %c) { var -s %c $remove(%c,$chr(32)) }
+    if (%c isalpha) { return %b ¤ ok } | else { 
+      if (%c == TKO3Knockdowns) { return %b ¤ ok }
+      if ((decision isin %c) && (points isin %c)) { 
+        if (%c isalnum) { return %b ¤ ok } 
+      } | else { echo -s %c er ikke isalpha | return error alpha } 
+    }
+  } | else { echo -s Ugyldig format | return error }
+
+
+
+  return %b ¤ end
+}
+
+alias parseEvent {
+  echo -s alias parseEvent: $1-
+
+  var -s %b $el.p($1-,1)
+
+  if ((/wiki isin %b) || (/w/index isin %b)) { var -s %b $el.p($1-,2) }
+
+  if (a href isin %b) { echo -s a href | var -s %b $gettok(%b,-1,34) }
+
+  if (display isin %b) { echo -s display | var -s %b $gettok($gettok($gettok($1-,-1,34),1,60),1,62) }
+
+  if (&amp; isin %b) { var -s %b $replace(%b,&amp;,&) }
+  if (& isin %b) { var -s %b $remove(%b,&) }
+
+  ; Denne vil bli returnert hvis alt går bra
+  var %c %b
+
+  if (($numtok(%b,58) <= 3) && ($numtok(%b,58) > 1)) { echo -s Numtok : - $numtok(%b,58) | var -s %b $remove(%b,:) } | elseif ($numtok(%b,58) > 1) { echo -s For mange : | return error kolon }
+  if (($numtok(%b,45) <= 6) && ($numtok(%b,45) > 1)) { echo -s Numtok - - $numtok(%b,45) | var -s %b $remove(%b,-) } | elseif ($numtok(%b,45) > 1) { echo -s For mange - | return error bindestrek }
+  if (($numtok(%b,8211) <= 3) && ($numtok(%b,8211) > 1)) { echo -s Numtok – - $numtok(%b,8211) | var -s %b $remove(%b,$chr(8211)) } | elseif ($numtok(%b,8211) > 1) { echo -s For mange 8211 | return error Unicode }
+  if (($numtok(%b,39) <= 4) && ($numtok(%b,39) > 1)) { echo -s Numtok ' - $numtok(%b,39) | var -s %b $remove(%b,') } | elseif ($numtok(%b,39) > 1) { echo -s For mange ' | return error apo }
+  if (($numtok(%b,46) <= 5) && ($numtok(%b,46) > 1)) { echo -s Numtok . - $numtok(%b,46) | var -s %b $remove(%b,.) } | elseif ($numtok(%b,46) > 1) { echo -s For mange . | return error punktum  }
+  if (($numtok(%b,47) <= 3) && ($numtok(%b,47) > 1)) { echo -s Numtok / - $numtok(%b,47) | var -s %b $remove(%b,/) } | elseif ($numtok(%b,47) > 1) { echo -s For mange / | return error skråstrek }
+
+
+
+  if ($chr(32) isin %b) { var -s %b $remove(%b,$chr(32)) }
+  if ($chr(33) isin %b) { var -s %b $remove(%b,$chr(33)) }
+  if ($chr(34) isin %b) { var -s %b $remove(%b,$chr(34)) }
+  if ($chr(44) isin %b) { var -s %b $remove(%b,$chr(44)) }
+  if ($chr(91) isin %b) { var -s %b $remove(%b,$chr(91)) }
+  if ($chr(93) isin %b) { var -s %b $remove(%b,$chr(93)) }
+  if ($chr(8211) isin %b) { var -s %b $remove(%b,$chr(8211)) }
+  if ($chr(124) isin %b) { var -s %b $remove(%b,$chr(124)) }
+
+
+
+  if (%b isalnum) { return %c ¤ ok } | else { echo -s " $+ %b $+ " er ikke isalnum | return %c ¤ ikke alnum }
+
+  return %c ¤ end
+}
+
+alias parseDate {
+  echo -s alias parseDate: $1-
+  var -s %b $el.p($1-,2)
+  if (%b == --- 2) { var -s %b $el.p($1-,1) | var %bb %b }
+  if (%b == Win) { echo -s Date og Result er blanda om | return error }
+  if (!%b) { return null (init) }
+  if ($chr(44) isin %b) { echo -s komma funnet i dato | var -s %b $replace(%b,$chr(44),$chr(32)) }
+
+  ; Brute force
+  if (display isin %b) { var -s %b $gettok($gettok($1-,4,62),1,60) }
+
+  var -s %c $ctime(%b)
+  if (!%c) { echo -s dato: c er tom, prøver alternative metoder (US mode) }
+
+  if ($numtok(%b,47) == 3) {
+    var -s %b $gettok(%b,2,47) $+ . $+ $gettok(%b,1,47) $+ . $+ $gettok(%b,3,47)
+    var -s %d $ctime(%b)
+    if ((%c) && (%d)) { echo -s Vi har både c og d (men "d" %d er riktig }
+    var %c %d
+  }
+
+
+
+  if ((!%c) && ($numtok(%bb,47) == 3)) {
+    var -s %b $gettok(%bb,1,47) $gettok(%bb,2,47) $gettok(%bb,3,47)
+    var -s %c $ctime(%b)
+  }
+
+  ; -
+  if ((!%c) && ($numtok(%b,45) == 3)) {
+    ; 2001-02-03
+    var -s %b $gettok(%b,3,45) $+ . $+ $gettok(%b,2,45) $+ . $+ $gettok(%b,1,45)
+    var -s %c $ctime(%b)
+    echo -s Sjekk om det ble riktig
+    halt
+  }
+
+  ; 4?
+  if ((!%c) && ($numtok(%b,4) == 3)) {
+    echo -s chr 4? | halt
+    var -s %b $gettok(%b,2,45) $+ . $+ $gettok(%b,1,45) $+ . $+ $gettok(%b,3,45)
+    var -s %c $ctime(%b)
+    echo -s halt | halt
+  }
+
+
+
+
+  if (%c) {
+    ; Lokal offset
+    var -s %d $asctime(HH:nn:ss)
+    var -s %e $calc($calc($gettok(%d,1,58) * 3600) + $calc($gettok(%d,2,58) * 60) +  $gettok(%d,3,58))
+    var -s %f $calc(%c - %e)
+
+    :f
+    if ($right(%f,1) == 0) { 
+      var -s %d $asctime(%f,dd.mm.yyyy)
+      return %f %d ¤ ok %b
+    } | else { if ($right(%f,1) == 9) { echo -s Legger på et sekund | var -s %f $calc(%f + 1) | goto f } }
+  } | else { return null (c) }
+}
+
+alias parseRound {
+  echo -s alias parseRound: $1- $prop
+  var -s %b $el.p($1-,1)
+
+  if (Round == $gettok(%b,1-1,32)) { var -s %b $gettok(%b,2-,32) }
+  if ($numtok(%b,32) == 2) { goto rt }
+
+  echo -s etter kommasjekk
+
+  if (%b isnum) { 
+    if ($prop) { return %b ¤ 0 ¤ RoundTime }
+    return %b 
+  }
+
+  if (%b == N/A) { return %b }
+  if (%b == na) { return %b }
+  if (%b == b) { return N/A }
+  if (%b == ?) { return N/A }
+  if (%b == N/R) { return N/A }
+  if (%b == /td) { return N/A }
+  if (%b == -) { return N/A }
+  if (%b == i) { 
+    if ($1- == <td align="center"><i><b>?</b></i></td>) { return N/A }
+    if ($1- == <td><i><b>?</b></i></td>) { return N/A }
+  }
+
+  ; 1 – 0:45
+  if ($numtok(%b,32) == 3) {
+    var -s %1 $gettok($gettok(%b,1,32),1-,32)
+    var -s %2 $gettok($gettok(%b,3,32),1-,32)
+    return %1 ¤ %2 ¤ RoundTime
+  }
+
+
+  if ($numtok(%b,32) == 2) {
+    :rt
+    return $remove($gettok(%b,1,32),$chr(44)) ¤ $gettok(%b,2,32) ¤ RoundTime
+  }
+
+  return error
+}
+
+alias parseTime {
+  echo -s alias parseTime: $1-
+  var -s %b $1
+  var -s %exp $2
+
+  echo -s Lagret så langt: %exp
+
+  var -s %r $gettok(%exp,-1,32)
+
+  var -s %c $el.p(%b,1)
+  if (%c == i) { 
+    var -s %c $el.p($1,2) 
+    if (%c == b) { var -s %c $el.p($1,33) }
+  }
+
+  if ($left(%c,1) == :) { var -s %c 0 $+ $gettok(%c,1,58)) | halt }
+
+
+  if (%c == N/A) { 
+    echo -s Time er N/A, simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (%c == NA) { 
+    echo -s Time er "NA", simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (%c == /td) { 
+    echo -s Time er "nonsense" or NULL, simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (%c == -) { 
+    echo -s Time er "-" (ukjent), simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (%c == ?) { 
+    echo -s Time er "?" (ukjent), simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (%c == &#160;?) { 
+    echo -s Time er "?" (ukjent), simulerer full runde
+    var -s %c 5:00 | var -s %d 5 | var -c %e 0
+    goto sec
+  }
+  if (. isin %c) { var -s %c $replace(%c,.,:) }
+
+
+  ; Sikkert: 4:10 -> d=4, e=10
+  var -s %d $gettok(%c,1,58)
+  var -s %e $gettok(%c,2,58)
+
+  :sec
+  var -s %sec $calc($calc(60 * %d) + %e)
+  var -s %ex %c %sec
+
+  if ((%d isnum) && (%e isnum)) { var -s %c isnum } | else { return %c error i tid-format }
+
+  ; Hvis flere enn en runde, legg totaltida også til.
+  ; Eks: "5:00 300" vil det stå ved en full runde,
+  ; "5:00 300 900" vil det stå ved tre fulle runder
+
+  if (%r > 1) { var -s %ex %ex $calc($calc($calc(%r - 1) * 300) + %sec) }
+  return %ex ¤ ok
+}
+
+alias sjekkParantes {
+  if (($chr(40) isin $1-) && ($chr(41) !isin $1-)) { return error } | else { return ok }
+}
+
+alias el.p {
+  var %a $1 --- $2
+  if (!$1) { return null }
+
+  if ($2 == 1) {
+    var %b $gettok($gettok(%a,2,62),1,60)
+    return %b
+  }
+  if ($2 == 2) {
+    var %b $gettok($gettok(%a,3,62),1,60)
+    return %b
+  }
+  ; Link
+  if ($2 == 3) {
+    var -s %b $gettok($gettok(%a,7-,60),2,34)
+    if (display:none == %b) { return no_link }
+    return %b
+  }
+  ; Navn
+  if ($2 == 4) {
+    var %b $gettok($gettok(%a,7-,60),4,34)
+    if (%b == new) { echo -s "new" funnet - to hakk videre | var -s %b $gettok($gettok(%a,7-,60),6,34) }
+    if (/wiki/ isin %b) { 
+      echo -s "/wiki/" funnet - ett hakk mindre
+      var -s %b $gettok($gettok(%a,7-,60),6,34)
+    }
+    if (/w/ isin %b) { 
+      echo -s "/w/" funnet - fra siste "
+      var -s %b $gettok($gettok($gettok(%a,-1,34),1,60),1,62)
+    }
+    return %b
+  }
+  if ($2 == 5) {
+    var %b $gettok($gettok($gettok(%a,7-,60),6,34),1,40)
+    return %b
+  }
+  ; Method
+  if ($2 == 6) {
+    var %b $gettok($gettok(%a,2,62),1,60)
+    return $gettok(%a,1,60) %b
+  }
+
+  ; Finding a fighter with no wikilink
+  if ($2 == 7) {
+    var %b $gettok($gettok(%a,-2,60),-1,62)
+    return %b
+  }
+
+  if ($2 == 33) {
+    var %b $gettok($gettok(%a,4,62),1,60)
+    return %b
+  }
+
+
+  return method not supported
+}
+
+alias el.p.r {
+  if (!$1) { return null }
+
+  ; Kun brukt der hvor det er ingen draw. $el.p.r2 blir brukt til det.
+
+  ; Må parse ut rekord på en rar måte 
+  var -s %c $1
+
+  var %l 1
+  while ($left( [ %c ] , [ %l ] ) isnum) { inc -s %l }
+  dec %l
+
+  var %r 1
+  while ($right( [ %c ] , [ %r ] ) isnum) { inc -s %r }
+  dec %r 2
+  if (%r == 0) { var %r 1 }
+
+  echo -s c: %c - l: %l - r: %r
+  return $left( [ %c ] , [ %l ] ) $+ - $+ $right( [ %c ] , [ %r ] )
+}
+
+alias el.p.r2 {
+  var -s %a $1-
+  var -s %a $gettok($gettok(%a,1,60),2,62)
+
+  var %draw no
+  if ($len(%a) > 8) { echo -s Must also find the draw | var %draw yes }
+
+  var %isnum 0
+  var %b 0
+  var %x $len(%a)
+
+  :loop
+  if ((%isnum > 2) && (%draw == no)) { goto end }
+  inc %b
+  if (%b < %x) {
+    if (%isnum == 0) {
+      var -s %c $left(%a,%b)
+
+      ; Første tall
+      if ((%c isnum) && (%isnum == 0)) { goto loop }
+
+      var -s %1 %b
+      inc %isnum
+      goto loop
+    }
+    if (%isnum == 1) {
+      var -s %c $mid(%a,%b,$calc( [ %b ] +1))
+      var -s %c2 $left(%c,1)
+      if (%c2 isnum) { 
+        var -s %2 %c2
+        inc %isnum
+        if (%draw == no) { goto end } | else { goto loop }
+      }
+    }
+    if (%isnum == 2) {
+      var -s %c $mid(%a,%b,$calc( [ %b ] +1))
+      var -s %c3 $left(%c,1)
+      if (%c3 isnum) { 
+        var -s %3 %c3
+        inc %isnum
+      }
+    }
+
+
+    goto loop
+  }
+  :end
+  echo -s Ferdig
+  echo -s 1: $left(%a,$calc( [ %1 ] -1))
+  echo -s 2: $mid(%a,%b,1)
+  echo -s 2a: $mid(%a,4,4)
+  echo -s 2b: %2
+
+  echo -s 3: $mid(%a,%b,1)
+  echo -s 3a: $mid(%a,4,4)
+  echo -s 3b: %3
+
+  echo -s >> %2 << >> %3 <<
+  if (%draw == yes) { echo -s $left(%a,$calc( [ %1 ] -1)) $+ - $+ %2 $+ - $+ $mid(%a,%b,1)
+    return $left(%a,$calc( [ %1 ] -1)) $+ - $+ %2 $+ - $+ $mid(%a,%b,1)
+    } | else {
+    echo -s $left(%a,$calc( [ %1 ] -1)) $+ - [ $+ [ $right(%a,1) ] ]
+    return $left(%a,$calc( [ %1 ] -1)) $+ - [ $+ [ $right(%a,1) ] ]
+  }
+}
+
+alias el.p.r3 {
+
+  var -s %a $1-
+  var -s %x $len(%a)
+  var %r 1
+
+  while ($right( [ %a ] , [ %r ] ) isnum) { inc %r }
+  echo r = %r
+  return $right( [ %a ] , [ $calc( [ %r ] -1) ] )
+}
+
+
+alias fillRecord {
+  ; In @record, populate the correct Record (Missing Record)
+
+  ; Starte fra bunn
+  var %a 0
+  var %x $line(@record,0)
+
+  var %win 0
+  var %loss 0
+  var %draw 0
+  var %nc 0
+
+  echo -s starter fillRecord
+
+  :loop
+  inc %a
+  if (%a <= %x) {
+    var -s %b $line(@record,%a)
+    var %res $gettok($gettok(%b,1,164),1-,32)
+
+    if (%res == Win) { inc %win }
+    elseif (%res == Loss) { inc %loss }
+    elseif (%res == Draw) { inc %draw }
+    elseif (%res == NC) { inc %nc }
+    elseif (%res == NO Contest) { inc %nc }
+
+    var %drawt - $+ %draw
+    if (%draw == 0) { var %drawtxt } | else { var %drawtxt %drawt }
+
+    var %nct ( $+ %nc $+ )
+    if (%nc == 0) { var %nctxt } | else { var %nctxt %nct }
+
+    var %fill %win $+ - $+ %loss $+ %drawtxt %nctxt
+    var -s %c $gettok(%b,1,164) $+ ¤ %fill ¤ $+ $gettok(%b,2-,164)
+    rline @record %a %c
+    goto loop
+  }
+  echo -s Sjekk @record for om det er rikitg
+}
+
+
+alias ana.calc {
+  ; TODO: Gjøre seg minst mulig avhengig av @wiki, og mer av @record og recordfiles.
+  ; Lagring av variabler, og timer 1 0 ana.calc %a %b %c
+  ; Sjekking av oppstart (lagd bedre, men mangler litt) - Ta vekk overflødig kode.
+  ; 15.01.11: Etter at sletting av linjer i @wiki er blitt innført, er det ikke lenger mulig å hente ut navn.
+  ; Man kan ikke hente ut navn fra hverken @wiki eller @record, man må enten supplere navnet selv, eller ta en randomt navn
+  ; Mye hardkoding her, må vurdere å lage flere aliaser.
+
+
+  ; Ny fighter skal beregnes
+  var -s %rfx $findfile(data\ufc\cache\,*.record.txt,0)
+
+  if (record.txt isin $1) {
+    echo -s record.txt mottat i $1
+    var -s %recordfile $1
+    goto a
+  }
+
+  :start
+
+  var %rand $rand(1,%rfx)
+  var -s %recordfile $findfile(data\ufc\cache\,*.record.txt,%rand)
+  goto a
+
+  :a
+
+  var %lukk 0
+  while ($window(@record*,0) > 0) { window -c $window(@record*,1) | inc %lukk }
+  echo -s Ferdig med å lukke vinduer, %lukk vinduer lukket.
+
+  ; Vi bruker alltid @record som en stamme
+  var %r @record
+  window -h %r
+  if ($exists(%recordfile)) { 
+    loadbuf %r " $+ %recordfile $+ " 
+
+    ; Finne wikifila med det samme
+    var %r.wiki $data(%recordfile).wiki
+  } | else { echo -s %recordfile eksisterer ikke, $exists(%recordfile) $+ , restarter alias ana.calc | goto start }
+
+  if ($line(%r,0) == 0) { echo -s Noe er fullstendig galt | halt }
+
+  if ($line(%r,1) == No matches found) { 
+    echo -s 14"No matches found" funnet i linje 1, re-looper 
+    goto start
+  }
+
+  var %sjekksum $checkRecord(%r,%recordfile)
+  if (%sjekksum == slett) { echo -s Recordfile ( $+ %recordfile $+ ) slettet pga feil matchsum | goto start }
+  if (%sjekksum == restart) { echo -s Recordfile ( $+ %recordfile $+ ) ikke godkjent pga feil "no matches found" i linje 2 | goto start }
+
+  echo -s %r er gyldig
+  window -hs @record.map | aline @record.map %r %r.wiki
+
+  ; Lage litt statistikk før vi begynner? :)
+  var %max.lines $line(%r,0)
+  var %wiki.lines $fline(%r,*/wiki/*,0)
+  if (%wiki.lines == 0) { goto nopop }
+
+  echo -s Det er nå %max.lines linjer i %r $+ , hvorav %wiki.lines linjer inneholder /wiki/ (regardless om de finnes som recordfiler eller ikke)
+  if (($1) && ($2 == ok)) { echo -s Vi har allerede populated! :) | halt }
+
+  echo -s Vi skal nå populate
+
+  if ($window(@record.list)) { window -c @record.list }
+  window -h @record.list
+
+  var -s %pop $populate2(%r,%r.wiki)
+  if (%pop != ok) { echo -s populate er ikke ok | halt }
+
+  echo -s Regner med at alle @record er laga, inkl. alle relevant undervinduer, @record02.04.07
+  halt
+
+  :nopop
+
+
+  if (/wiki/ isin %r.wiki) { aline @record.map %r %r.wiki <- r.wiki? } | else { 
+    echo -s Kunne ikke motta wikilink for %recordfile 
+
+    echo -s nødtesting...
+    var -s %a 0
+    var -s %x $lines(%recordfile)
+    :missing
+    inc %a
+    if (%a > %x) { echo -s /wiki/ ikke funnet | halt }
+
+    var -s %1 $read(" $+ %recordfile $+ ",%a)
+    var -s %wiki $gettok($gettok($gettok(%1,3,164),1,32),1-,32)
+    if (/wiki isin %1) { 
+      var -s %record $data(%wiki).record
+      if (!$exists(%record)) { 
+        echo -s %record finnes ikke :(
+        echo -s Vurdere å legge %wiki til @ufc.que!
+        var -s %inque $fline(@ufc.que,* $+ %wiki $+ *,0)
+        if (%inque == 0) { 
+          echo -s %wiki finnes ikke i @UFC.que, legge den til :)
+          aline @UFC.que %wiki
+        } | else { echo -s %record eksisterer ikke, men den er allerede i que'en, fortsetter med loopen | goto missing }
+        } | else { 
+        echo -s %record eksisterer! :) 
+        var -s %navn $data(%recordfile).navn
+        echo -s Neste steg: Søke i %record etter %navn - Finne wikilink i den linja
+        var -s %test $read(%record,w,* $+ %navn $+ *)
+        var -s %readn $readn
+        var -s %utlinje $read(%record,%readn)
+        var -s %wiki.o $gettok(%utlinje,3,164)
+        if (%navn !isin %wiki.o) { echo -s %navn er ikke i %wiki.o likevel } | else {
+          var -s %wikilink.want $gettok($gettok(%wiki.o,1,32),1-,32)
+          echo -s ER DETTE SVARET VI VIL HA?!
+          echo -s Neste steg: Innføre dette i data
+        }
+
+        halt 
+      }
+      var -s %search $read(%record,w,%wiki)
+    } | else { echo -s Fant ikke wikilink, prøver igjen | goto missing }
+    echo -s Her ville jeg IKKE at elsetesten skulle komme! > %1
+    halt 
+  }
+
+  ; Vi har nå en korrekt @record, la oss se hvor mange denne Fighteren kjenner til
+
+  var -s %bekjente $fline(%r,*/wiki/*,0)
+  var %xb %bekjente
+  var %add 0
+
+  ; Gjennomgå /wiki/-referansene i @record.
+  ; Finne ut om recordfile eksisterer, farge de grønne og røde i @record.
+  ; Hvis finnes, legg til @record.map og load de inn i ny @record2. Fargelegg også @record.map
+  ; Hvis ikke, legg til i @ufc.que og IKKE legg til i record.map
+
+  var %ab 1
+  while (%ab <= %xb) { 
+    var %mapw $line(@record.map,0)
+    var %rf $fline(%r,*/wiki/*,%ab)
+    if (%ab == 1) { var -s %firstwiki %rf }
+    var %rf2 $line(%r,%rf)
+    var %r2 @record $+ $calc(%mapw + 1)
+    var %wiki $gettok($gettok(%rf2,3,164),1,32)
+    var %date $gettok($gettok(%rf2,5,164),2,32)
+    var %f $data(%wiki).record
+    if ($exists(%f)) {
+      aline @record.map %r2 %wiki | cline 3 %r %rf | cline 3 @record.map $line(@record.map,0)
+      window -h %r2 | loadbuf %r2 " $+ $data($gettok($gettok(%rf2,3,164),1,32)).record $+ "
+      } | else { 
+      var %complete false
+      dec %bekjente 
+      if (!$window(@ufc.que)) { window -hl @UFC.que }
+      if ($fline(@ufc.que,%wiki $+ *,0) < 1) { aline @ufc.que %wiki | var %txt2 %wiki lagt til @UFC.que | inc %add }
+      cline 4 %r %rf
+    }
+    if (%txt) { 
+      echo -s %txt %txt2 
+      unset %txt
+      unset %txt2
+    }
+    inc %ab
+  }
+
+  echo -s while ended, $window(@record*,0) vinduer som heter noe med record nå, Bekjente med record er nå %bekjente $+ . 
+
+  if (%rfx) { var %tilsvarer Det tilsvarer $calc($calc($fline(@ufc.que,*/wiki/*,0) / %rfx) * 100) $+ % }
+  echo -s Vi mangler $calc(%xb - %bekjente) $+ , hvor %add ble lagt til i @UFC.que. Det er nå $fline(@ufc.que,*wiki/*,0) linjer (med /wiki/) der. %tilsvarer
+
+  if (%complete == false) { echo -s 4En fullstending kalkulasjon er umulig :( } | else { echo -s 3En komplett kalkulering er mulig! }
+
+  if (!%firstwiki) { echo -s Ingen wikifiler funnet, setter firstwiki til siste linje + 1 slik at vi får beregna siste linje også | var -s %firstwiki $line(%r,0) | inc -s %firstwiki }
+  echo -s Prøver å se om vi kan foreta 100-beregninger - 1 vs %firstwiki -
+
+  var %continue 0
+  var %a 1
+
+  :continue
+  if (%a < %firstwiki) {
+    var -s %line $line(%r,%a)
+
+    var -s %score1 $gettok(%line,9,164)
+    if (%score1) { 
+      var -s %score.1 $gettok($gettok(%score1,3,32),1-,32) 
+      inc %a
+      goto continue 
+    } | else { inc -s %continue }
+
+    var -a %sjekk $sjekkParantes(%line)
+    if (%sjekk != ok) { echo -s Filen burde slettes! | halt }
+
+    if (no_link isin $gettok($gettok(%line,3,164),1,32)) { inc -s %continue }
+
+    if (%continue == 2) { 
+      echo -s En kalkulasjon av linje %a er mulig! 
+
+      ; Setter opp vars til $ana.calc2
+      if (!%score.1) { var -s %score.1 100 } 
+
+      if (!%mot.score) { var -s %mot.score 100 }
+      var %utfall $gettok(%line,1,164)
+      var %method $gettok($gettok(%line,4,164),1-,32)
+      var %when $gettok($gettok(%line,8,164),-1,32)
+      var %newscore $ana.calc2( [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ] )
+      if (error.end isin %newscore) { echo -s ana.calc2 kunne ikke utregne :( | halt }
+
+      echo -s Recordfile som vi skal manipulere: %recordfile Linja er: %a
+      echo -s %line <- linja
+
+      ; Tar ikke vare på motstanderens score, siden vi er i en loop hvor vi forutsetter at den er 100
+      var %score1.ba %score.1
+      var %score.1 $gettok(%newscore,1,32)
+
+      var %line2 %line ¤ %score1.ba -> %score.1 & %mot.score -> $gettok(%newscore,2,32)
+
+      write -l $+ %a " $+ %recordfile $+ " %line2
+      echo -s $read(%recordfile,%a) <- linja oppdatert til
+
+      ; Farge har ingenting å si, no_link er svarte uansett.
+      rline %r %a %line2
+
+      inc %a  
+      var %continue 0
+      goto continue
+    } | else { echo -s Kalkulasjon av linje %a ikke mulig ( $+ %continue $+ ) | inc %a | goto continue }
+  } | else { echo -s /wiki/ funnet i linje %a - ingen flere 100-kalkulasjoner ikke mulig }
+
+
+  echo -s [1] Tydeligvis ferdig med å beregne 100...
+
+  if (%firstwiki == %a) { 
+    var -s %wiki $gettok($gettok($gettok($line(@record,%firstwiki),3,164),1,32),1-,32)
+    var -s %fline $fline(@record.map,* $+ %wiki,0)
+    if (%fline > 0) { 
+      echo -s Det er mulig å fortsette! (Nå med wiki)
+      var -s %fline $fline(@record.map,* $+ %wiki,1)
+      var -s %line $line(@record.map,%fline)
+      var -s %vindu $gettok(%line,1,32)
+      echo -s Fortsette i vindu %vindu ? 
+
+      echo -s a = %a ?
+      var -s %r.line $line(%r,%a)
+      var -s %dato $gettok($gettok($gettok(%r.line,6,164),2,32),1-,32)
+
+      echo -s Søke etter %dato i %vindu og finne linjenummeret?
+
+      var -s %r2 $fline(%vindu,* $+ %dato $+ *,1)
+      if (%r2) {
+        cline 12 %vindu %r2
+        var -s %line2 $line(%vindu,%r2)
+
+        echo -s Sjekke om det finnes wikilinker før linje %r2 i %vindu
+        var -s %wiki2 $fline(%vindu,* $+ /wiki/ $+ *,1)
+        echo -s Første treff var... *trommelyd*
+        if (%r2 <= %wiki2) { 
+          echo -s Den linja jeg ville ha tak i - %r2 - er lavere eller den samme enn wiki2 - %wiki2 - så kan jeg fortsette!
+
+          var -s %1line $line(%vindu,1)
+          var -s %numtok $numtok(%1line,164)
+
+
+          halt
+        } | else { echo -s Dessverre en det en NY wikilink, må populate den også... | halt }
+
+        } | else { 
+        echo -s No matches found i %vindu kanskje? 
+        echo -s Sette motstanders score til 100, og beregne?
+        echo -s For vi er vel i linje %a i %r enda, vel?
+
+        var -s %mot.score 100
+
+
+        if (%a == 1) { 
+          echo -s Vi ble møtt med wikilink i allerede første linje
+          echo -s Score? %score.1 -- %score1 --
+          } | else { 
+          echo -s Vi burde ha en score nå? " %score.1 " 
+
+          echo -s Vi har vår egen score på %score.1 og motstanders score er %mot.score
+          echo -s Hva med resten av linja?
+          echo -s Er det %r.line ?
+
+          var %utfall $gettok(%r.line,1,164)
+          var %method $gettok($gettok(%r.line,4,164),1-,32)
+          var %when $gettok($gettok(%r.line,8,164),-1,32)
+          var -s %newscore $ana.calc2( [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ] )
+
+          ; THIS CODE IS A DUPLICATE!
+          if (error.end isin %newscore) { echo -s ana.calc2 kunne ikke utregne :( | halt }
+
+          echo -s Recordfile som vi skal manipulere: %recordfile Linja er: %a
+          echo -s %line <- linja
+
+          ; Tar ikke vare på motstanderens score, siden vi er i en loop hvor vi forutsetter at den er 100
+          var -s %score1.ba %score.1
+          var -s %score.1 $gettok(%newscore,1,32)
+
+          ; Prøve med r.line
+          var %line2 %r.line ¤ %score1.ba -> %score.1 & %mot.score -> $gettok(%newscore,2,32)
+
+          write -l $+ %a " $+ %recordfile $+ " %line2
+          echo -s $read(%recordfile,%a) <- linja oppdatert til
+
+          ; Farge har ingenting å si, no_link er svarte uansett.
+          rline %r %a %line2
+
+          echo -s Jeg er klar til å ta neste linje! Men hvordan?
+          halt
+
+
+
+
+        }
+
+
+        echo -s halt | halt
+      }
+      echo -s halt | halt
+    } | else { echo -s Missing wikilink, alle 100-beregninger tatt, men kan umulig fortsette | goto ferdig }
+
+
+    if ($line(@ufc.que,0) >= 1) {
+      echo -s 7Passert en død wikilink, tar en linje i @UFC.que automatisk om 3 sekunder
+
+      var -s %a $line(@ufc.que,1)
+      window -c @record
+      if (ana.calc isin %a) { dline @ufc.que 1 | timer 1 3 { ana.calc $gettok(%a,2-,32) } } | else { dline @ufc.que 1 | window -c @record | timer 1 3 { wiki %a } }
+    }
+
+    echo -s "Bad times"
+    halt 
+  }
+
+  echo -s Tatt alt helt fram til linja %a
+  echo -s halt | halt
+  echo -s Submitted to ana.calc2: [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ]
+  if (%mot.score != 100) { echo -s Noe er galt med poengsummen til motstanderen | halt }
+
+  var %newscore $ana.calc2( [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ] )
+  echo -s Experimental alias: %newscore
+
+
+
+
+
+
+
+
+
+  ; As in "begin"
+  :b
+
+  echo -s alias ana.calc(begin)
+
+  halt
+
+  ; Hvis /ana.calc [isnum], så setter vi den istedenfor
+  ; Egentlig ikke, vi vil starte fra første linje om ikke ferdigberegna
+  ; og det var den ikke, derfor er vi her.
+  ; Men vinduene er lukka, så vi må åpne en @record-vindu
+
+  :c
+  var %a 0
+  unset %victories
+
+  var -s %pts 100
+
+  ; Mange av variablene her brukes ikke
+  var -s %win 0
+  var -s %loss 0
+  var %e.win.type
+  var %e.loss.type
+  var -s %mot.score 100
+
+  ; TODO - burde kalkuleres for hver ny motstander...
+  ; 01.10.2010: Kanskje lage nye aliser, som $load(fighter), bruke @wiki2, rescripte sånn at et-aller-annet alias kan bruke forskjellige
+  ; wiki-vinduer dynamisk. Jeg er fortsatt ikke sikker på om jeg vil bruke multiple connections, tror jeg tar det en for en, til å
+  ; begynne med iallefall.
+
+  ; TODO: Jeg vil også ha tida med inn i kalkulasjonen. Hvis lang tid siden forrige kamp, gi penality. (Lagt inn kode, fjernet igjen, denne er på todolista)
+  ; Helst vil jeg ha decreading score etterhvert som tida går. På den måten får vi også tatt med retired fightere.
+
+  ; En annen idé er å se hvor gammel fighteren var da kampen skjedde. Se etter "bday" fra wiki-dokumentet.
+
+  ; Jeg ser at jeg ikke tar med %method i det hele tatt... Hvis submission artist, + for mer submission, ++ for en knockout, +++ for "mixing it up"
+  ; Det viktigste er at kampen ikke går til distansen, derav +20% poeng.
+  ; Kanskje balansere det med at +20% alltid gir mer poeng enn decision? Done!
+
+  ; Satser på at %3 ikke blir andre steder enn akkurat da, når man submitter ana.calc
+  if (%3) { 
+    echo -s Hvis 3 finnes
+
+    echo -s Dette er altså andre (eller mer) gang vi kjører aliasen (Det kan vi kanskje finne ut av ved å se på @recordN, men det avhenger av at ingen @recordvinduer er lukket)
+
+    var -s %target.wiki %2
+    var -s %hoved.wiki %2
+    var -s %hoved.navn $replace($right(%2,$calc($len(%2)-6)),_,$chr(32))
+
+    ; Vi antar at vinduet %3 er tom/null
+    window -h %3
+
+    echo -s Bruker submitted @record-value > %3 og setter den som variabel w: %w
+    var -s %w %3 
+
+    var -s %hoved.record $4
+    ; Brukes ikke noe sted, siden vi har record, men til "echo -s"
+
+    var -s %target.navn $replace($gettok($gettok($4,-1,92),1,46),_,$chr(32))
+    echo -s Loader $4 til %3
+
+    echo -s Hm, er det derfor det blir dobbel-greier i @record-vinduene?
+    echo -s Linjer i %w før loadbuf
+    if ($line(%w,0) > 0) { echo -s Linjer i %w før loadbuf var $line(%w,0) - goto | goto d }
+    loadbuf %w " $+ $4 $+ "
+
+    echo -s Sjekk om det er noe i %3 som kommer fra $4
+    } | else { 
+    var %w @record 
+    echo -s Førstegangskjøring, vinduet er altså @record
+  }
+
+  ; Begin, Continue, og dette er en "d"
+  :d
+  var %x $line(%w,0)
+  if ((%x == 0) || (!%x)) { echo -s Ingen linjer i %w $+ , prøv /ana.box (hvis det lar seg gjøre) (Vil isåfall extract ifra @wiki, tror jeg) | goto ferdig }
+
+  echo -s Vi skal hovedsaklig kalkulere de %x kampene til %hoved.navn ( $+ %hoved.wiki $+ )
+  echo -s hovedwiki: %hoved.wiki record: %hoved.record targetwiki: %target.wiki recordvindu: %w
+  if (!%hoved.wiki) { echo -s Dette er en iterasjon for %target.navn hvor recordvinduet er %3 som er henta fra %hoved.record og hvor vi søker etter %target.wiki }
+
+  :loop
+  inc %a
+  if (%a > %x) { goto ferdig }
+
+  echo -s ---------------------- Kamp %a av %x fra %w ( $+ %hoved.wiki Target: %target.wiki $+ ) ----------------------
+
+  ; Full linje
+  var -s %b $line(%w, [ %a ] )
+  var -s %ferdig $gettok($gettok(%b,9,164),1-,32)
+  if (%ferdig) { echo -s ferdig funnet :) | goto loop }
+  if (%b == No matches found) { echo -s "no matces found" funnet, setter score til 100 og tar en "goto" | var -s %mot.score 100 | goto sub }
+
+  ; Viktig at formatet er;
+  ; "Win ¤ 1-0 ¤ /wiki/Tony_Halme Tony Halme ¤ Submission (Rear Naked Choke) ¤ UFC 13: Ultimate Force ¤ 864952828 May 30 1997 ¤ 1 ¤ 1:00 60"
+  ; Merk, at hvis ved flere runder, så er det tre "tall" i siste rubrikk.
+
+  ; Jeg ser av og til at elements kan være 9 stk av, og da mangler "1-0", men det er bare å regne ut isåfall. Vær obs på det. Har ikke vært borti det så langt.
+  ; Hvis det er 8, så betyr det at de to siste mangler, og det er ingen problem i det hele tatt :)
+
+  var -s %utfall $gettok($gettok(%b,1,164),1-,32)
+  var -s %motstander $gettok($gettok(%b,3,164),1-,32)
+  var -s %mot.navn $gettok($gettok(%b,3,164),2-,32)
+  var -s %mot.wiki $gettok($gettok(%b,3,164),1,32)
+  var -s %mot.ctime $gettok($gettok(%b,6,164),1,32)
+  var -s %mot.record data\ufc\cache\ $+ $right(%mot.wiki,$calc($len(%mot.wiki) - 6)) $+ .record.txt
+  var -s %mot.dato $gettok($gettok(%b,6,164),2-,32)
+  var -s %mot.dato2 $asctime( [ %mot.ctime ] ,yyyy-mm-dd)
+
+  ; Burde ha endra rekkefølgen på denne. Det vanligste burde være at det fantes en wikilink, ikke det motsatte.
+  if (%mot.wiki == no_link) { echo -s Motstanderen har ikke wikilink, setter motstander score til 100 :) | var -s %mot.score 100 } | else { 
+    echo -s Motstanderens wikilink parsed out -> %mot.wiki
+
+    ; Sjekke om recordfil finnes, hvis ikke, sjekk om wikifil finnes, hvis ikke, last ned
+    ; Her sjekker vi for recordfile
+    if ($isfile(%mot.record)) { 
+      echo -s Record-file finnes ( $+ %mot.record $+ )
+
+      echo -s Hvilket vindu har vi brukt så langt? %w
+      var -s %w.ba %w
+
+
+      ; Sjekker neste ledige vindu
+      var -s %record 1
+      :wcloop2
+      inc %record
+      var -s %w @record [ $+ [ %record ] ]
+      if ($window( [ %w ] )) { echo -s Vindu %w finnes, prøver neste | goto wcloop2 } | else { echo -s Vindu %w finnes ikke, it's up for grabs :) }
+
+      ; Oppretter ny vindu
+      echo -s Oppretter %w
+      window -h %w
+      echo -s loadet fil til %w $+ : " $+ $mircdir $+ %mot.record $+ " 
+      loadbuf %w " $+ $mircdir $+ %mot.record $+ "
+
+      ; Sjekk om recordfila inneholder kamper (i tilfelle "no matches found")
+      ; Record Line
+      var -s %xl $line(%w,1)
+      if (%xl == no matches found) { 
+        echo -s no matches found 
+        echo -s Selv om vi har en recordfile, så vet vi at mot.score ( $+ %mot.score $+ ) er/skal være 100 før ny kalkulering.
+        echo -s Vi må finne ut av den forrige vinduet
+        echo -s Working window? %w
+        echo -s Lukker %w før vi klusser til med variabelen :)
+        window -c %w  
+        var -s %w $right(%w,1)
+        dec -s %w
+        ; Antar at stammen er "@record"
+        var -s %w @record $+ %w
+        if (%w == @record1) { var -s %w @record }
+        ; Må ta en dec-loop, sånn at vi finnes den siste utregna kampen
+        var -s %x $line(%w,0)
+        var %a $calc(%x + 1)
+        ; Recovery loop
+        :rloop
+        dec %a
+        if (%a < 0) { echo -s Infinite loop | halt }
+        if (!$gettok($line(%w,%a),9,164)) { echo -s kamp ikke funnet? goto rloop | goto rloop }
+        echo -s Funnet? %a - $line(%w,%a)
+        var -s %score.1 $gettok($gettok($line(%w,%a),9,164),3,32)
+        inc %a
+        var -s %line $line(%w,%a)
+        var -s %b %line
+        echo -s mot.score? %mot.score
+        var %mark mark
+        goto met
+      }
+
+
+
+
+      echo -s ---
+
+      echo -s La oss tenke litt før ny ana.calc...
+      echo -s hoved.wiki er %hoved.wiki og mot.wiki er %mot.wiki - however, hvis vi gir vekk %hoved.wiki så vil det være en match inni der
+
+      echo -s %target.wiki <- Hvis den er tom, så er det fint. For da setter jeg target.wiki fra hoved.wiki
+      if (!%target.wiki) { var -s %target.wiki %hoved.wiki }
+
+      echo -s finnes 2? eller 5? -> $2 -> $5
+      echo -s Kanskje sette hoved.wiki fra en av de?
+      echo -s Eller targetwiki?
+
+      ; $2 && !$3 betyr f.eks "/ana.calc Brock Lesnar"
+      if ($3) { 
+        echo -s Setter target.wiki!
+        var -s %target.wiki $2
+      }
+
+
+      if (%3) { 
+        echo -s Vi har kjørt ihvertfall en gang, kom til wikilink, åpne ny @record2, og fant ny wikilink og her er vi stuck
+
+        echo -s Så langt kom vi... -> ana.calc %a %hoved.wiki %w %mot.record %target.wiki <- 
+        echo -s PRØV! :)
+        echo -s Finnes %target.wiki ?
+        echo -s Main fighter: %hoved.wiki i vindu: %w.ba Vi kom til linje: %a Vi skal loade %mot.record til vindu %w og søke etter %hoved.wiki (eller %hoved.record $+ )
+        echo -s Ikke sett ny timer før jeg har alt på stell, før jeg vet hvilke og hva slags variabler jeg skal sende 2nd resurartion.
+      }
+
+      echo -s Dette er situasjonen:
+      echo -s Vi har %w.ba som inneholder %hoved.record
+      echo -s Vi kom til linje %a hvor vi møtte på en wikilink som er %mot.wiki
+      echo -s Vi skal loade %mot.record inn i et nytt vindu %w
+      echo -s Når det er gjort, så kjører vi ana.calc en gang til hvor vi ber om at den skal søke etter %target.wiki
+      echo -s Vi sender vekk: %a %hoved.wiki %w %mot.record %target.wiki
+      echo -s Som betyr: load %mot.record inn i %w og søk etter %target.wiki
+
+      echo -s Main fighter: %hoved.wiki i vindu: %w.ba Vi kom til linje: %a Vi skal loade %mot.record til vindu %w og søke etter %hoved.wiki (eller %hoved.record $+ ) %target.wiki 
+      echo -s timer 1 0 { ana.calc %a %mot.wiki %w %mot.record %target.wiki }
+      timer 1 0 { ana.calc %a %mot.wiki %w %mot.record %target.wiki }
+      echo -s Etter ny ana.calc
+
+      echo -s halt, vet ikke hva jeg skal gjøre
+      halt
+
+    }
+
+    ; Recordfile fantes ikke, sjekk om wiki-fil finnes
+
+    var -s %file $gettok(%mot.record,1,46) $+ . $+ $gettok(%mot.record,-1,46)
+    echo -s $isfile(%file)
+
+    if ($isfile(%file)) {
+      echo -s Recordfile fantes ikke, men det gjør wikifila
+      echo -s Fant ut at jeg kan bruke /ana.extract istedenfor /wiki
+      echo -s Siden %mot.navn er allerede funnet ut av, siden er det like greit å sende det videre
+      timer 1 0 { ana.extract %file %mot.navn }
+      goto ferdig
+    }
+
+    ; Jeg lar være å ta en "else" her. Latskapsgrunner.
+    if (!$isfile(%file)) { 
+      echo -s Vi har hverken recordfile eller wikifile. Vi må *helt* ut på nettet og laste ned " $+ %mot.wiki $+ " :( 
+      timer 1 0 { wiki %mot.wiki }
+      goto ferdig
+    }
+
+    echo -s Bare det at vi ikke skal bruke wikilink. Nåja, hvis ikke recordfile finnes da... Og recordfil finnes ikke :(
+
+    echo -s halt
+    halt
+
+
+    ; TODO - 01.10.2010 - Sjekke om vi har cache av denne fighteren. Hvis ja, ta en direkte sammenligning med en gang. (Åpne secondary vinduer.)
+    ; Hvis ikke, lagre linken til queue. (TODO)
+    ; Kanskje til nedlastning rett etter denne kalkulasjonen er ferdig.
+    ; Grunnen til at vi bruker cache, er at det med all sannsynlighet at vi har kampene vi trenger. Og hvis det er feil, no worries, vi dealer med det senere.
+
+    ; 02.10.2010 Etter å ha tatt en titt på alias data, så er det mye bedre å søke på wikilinken :)
+
+    var -s %wiki.search $data(%mot.wiki)
+    if (!%wiki.search) { 
+      echo -s 4Wikilinken til %motstander ikke funnet i cachen vår! :( (TODO) 
+      ; echo -s Avbryter denne kalkulasjonen, og kjører "/wiki %mot.wiki $+ " om 3 sekunder
+      ; timer 1 3 { wiki %mot.wiki | halt }
+      halt
+      } | else {
+      echo -s 3Vi har faktisk wikilinken ( $+ %mot.wiki $+ ) til %mot.navn
+
+      ; Sjekker neste ledige vindu
+      var -s %wiki 1
+      :wcloop
+      inc %wiki
+      var -s %w @wiki [ $+ [ %wiki ] ]
+      if ($window( [ %w ] )) { echo -s Vindu %w finnes, prøver neste | goto wcloop } | else { echo -s Vindu %w finnes ikke, it's up for grabs :) }
+
+      ; Oppretter vindu
+      echo -s Oppretter %w
+      window -h %w
+      echo -s fil: $shortfn($mircdir $+ data\ufc\cache\ $+ $right(%mot.wiki,$calc($len(%mot.wiki) - 6)) $+ .txt)
+      echo -s Linjer i %w før loadbuf: $line(%w,0)
+      if ($line(%w,0) > 0) { echo -s Det finnes linjer i %w fra før av, halt | halt }
+      loadbuf %w $shortfn($mircdir $+ data\ufc\cache\ $+ $right(%mot.wiki,$calc($len(%mot.wiki) - 6)) $+ .txt)
+
+      ; Vi har to forskjellige dato-format, hvilken av de blir brukt i %w?
+      ; Vi har vel tre?
+
+      var -a %format 0
+      :dloop
+      inc %format
+      if (%format == 1) { var -s %dato %mot.dato }
+      if (%format == 2) { var -s %dato %mot.dato2 }
+      if (%format == 3) { echo -s Virker som at %mot.navn ikke har fighta %dato | halt }
+
+      var -s %s.dato $fline( [ %w ] ,* $+ %dato $+ *, 0)
+
+      if (%s.dato == 0) { goto dloop }
+
+      : Vi traff
+      var -s %line $fline( [ %w ] ,* $+ %dato $+ *, 1)
+      echo -s Line: $line( [ %w ] ,%line)
+      dec %line 5
+      echo -s Line: $line( [ %w ] ,%line)
+
+      echo -s Vi har funnet kampen, men hva er det vi vil vite?
+      echo -s Jeg tror vi vil vite poengsummen før denne kampen
+      echo -s Men det er jo tediois!
+      echo -s Da er det bedre å loade @record fra Fighter2, istedenfor å gjennomsøke @wiki på nytt
+
+      echo -s Midlertidig halt til dette er blitt fikset
+      halt
+    }
+  }
+
+  :met
+  var -s %method $gettok($gettok(%b,4,164),1-,32)
+  var -s %round $gettok($gettok(%b,7,164),1-,32)
+  var -s %when $gettok($gettok(%b,8,164),2-,32)
+  if ($numtok(%when,32) > 1) { var -s %when $gettok(%when,-1,32) }
+
+  if (%score.1) { var -s %score.ba %score.1 } | else { var -s %score.ba 100 | var -s %score.1 100 }
+  if (%score.2) { var -s %score.ba2 %score.2 } | else { var -s %score.ba2 100 }
+
+  :sub
+  echo -s Submitted to ana.calc2: [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ]
+  if (%mot.score != 100) { echo -s Noe er galt med poengsummen til motstanderen | halt }
+
+  var %newscore $ana.calc2( [ %score.1 ] , [ %mot.score ] , [ %utfall ] , [ %method ] , [ %when ] )
+  echo -s Experimental alias: %newscore
+
+  var -s %score.1 $gettok(%newscore,1,32)
+  var -s %score.2 $gettok(%newscore,2,32)
+  if (!%score.2) { echo -s Score 2 er tom | halt }
+
+  echo -s Ny score for Fighter A: %score.1 ¤¤¤ Score for Fighter B: %score.2
+
+  echo -s ny score: %score.1 ( $+ $calc(%score.1 - %score.ba) $+ )
+
+  echo -s Hm... jeg skriver ikke til %hoved.record med de nye verdiene
+  echo -s Hvilken linje er vi i? %a
+  echo -s Jeg burde ta den linja og skrive til "¤ %score.ba -> %score.1 & %mot.score -> %score.2 $+ "
+
+  if (!%hoved.record) { 
+    echo -s reserveløsning: 1 == $1
+    if (record.txt isin $1) { var -s %hoved.record $1 } | else { echo -s Vet ikke hvilken fil vi skal skrive til... | halt }
+  }
+
+  echo -s hoved.record: %hoved.record
+  var -s %b $read(%hoved.record,%a)
+
+  if ((%score.1 !isnum) || (%score.2 !isnum)) { echo -s Noe er galt i tilskriving av ny linje! | halt }
+
+
+  echo -s /write -l $+ %a %hoved.record %b ¤ %score.ba -> %score.1 & %mot.score -> %score.2
+  write -l $+ %a %hoved.record %b ¤ %score.ba -> %score.1 & %mot.score -> %score.2
+  echo -s Sjekk om /write ser ok ut
+  ; halt
+
+  goto loop
+
+  :ferdig
+  echo -s Ferdig :)
+}
+
+alias checkRecord {
+  ; Sjekke om filen er riktig med hensyn til at første kamp burde være "1-0"
+  var %r $1
+  var %recordfile $2
+  var %1 $line(%r,1)
+  if (no matches found == %1) { return ok }
+
+  var %1 $gettok($gettok(%1,2,164),1-,32)
+
+  ; Replace    
+  if ($chr(45) isin %1) { var %1 $replace(%1,$chr(45),+) }
+  if ($chr(8211) isin %1) { var %1 $replace(%1,$chr(8211),+) }
+  if ($chr(40) isin %1) { var %1 $replace(%1,$chr(40),+) | var -s %1 $replace(%1,$chr(41),+) }
+
+  var %1 $calc($gettok(%1,1,43) + $gettok(%1,2,43) + $gettok(%1,3,43))
+  if (%1 != 1) { 
+    echo -s 4Summen i kampresultatet er galt! Kalkulering av første match viste en sum av %1 $+ . Orginallinjen er: $line(%r,1)
+
+    aline @ufc.que $data(%recordfile).wiki
+    remove " $+ %recordfile $+ "
+    return slett
+  }
+
+  ; Sjekke om filen er riktig med hensyn til riktig /wiki/-format eller no_link i 3. element (søke etter "redlink")
+  var %redlink $fline(%r,*redlink*,0)
+  if (%redlink > 0) { 
+    echo -s 4Det er et problem med redlinks i %r 
+    aline @ufc.que $data(%recordfile).wiki
+    remove " $+ %recordfile $+ "
+    return slett
+  }
+
+  ; Sjekke om filen er riktig med hensyn til at det ikke finnes "http://*"
+  var %http $fline(%r,*http://*,0)
+  if (%http > 0) { 
+    echo -s 4Det er et problem med http:// i %r 
+    aline @ufc.que $data(%recordfile).wiki
+    remove " $+ %recordfile $+ "
+    return slett
+  }
+
+  if ($line(%r,2) == No matches found) { 
+    echo -s "No matches found" 4funnet i linje 2, slette linja og re-looper 
+    write -dl2 %recordfile 
+    return restart
+  }
+}
+
+alias populate {
+  ; Denne "populates" f.eks @record -> @recordN og legger de til @record.map. Return ok when done.
+  ; Husk at vi ikke skal beregne noe som helst her. (Fristende 100-kamper.)
+  ; Vi skal heller ikke sjekke gyldigheten til no_link.
+
+  unset %a
+
+  var %r $1
+  var %b $2
+  var %dato $3
+  if (!%dato) { 
+    echo -s Dato ikke oppgitt, finner maxline 
+    var -s %maxline $maxline(%r) 
+    } | else { 
+    echo -s dato? Hva gjør vi med det? Søkte etter " $+ %dato $+ " i vindu %r :)
+    var -s %fline $fline(%r,* $+ %dato $+ *,0)
+    if (%fline == 1) { 
+      var -s %fline $fline(%r,* $+ %dato $+ *,1)
+      var -s %line $line(%r,%fline)
+      var -s %maxline %line
+      halt
+    }
+  }
+
+  ; Sjekke om det er førstegangskjøring
+  if (%r == @record) { set %r.ba %r | set %b.ba %b | set %maxline.ba %maxline } 
+
+  ; Sjekke om det er /wiki/ i %r i det hele tatt
+  if ($fline(%r,*/wiki/*,0) == 0) { echo -s Ingen wikilink funnet i %r - på en eller annen måte burde vi finne tilbake til hvor vi var og fortsette... | return ok }
+
+  var %wiki.x $fline(%r,*/wiki/*,0)
+  if (%maxline == all) { var -s %maxline $fline(%r,*/wiki/*,%wiki.x) | var %d %wiki.x } | else {
+    ; Ikke "all", finnes neste siste /wiki/ opptil linje %maxline
+
+    var %c 1
+    :floop
+    var %fline $fline(%r,*/wiki/*,%c)
+    if (%fline) {
+      if (%fline < %maxline) { echo -s Linje $fline(%r,*/wiki/*,%c) -- Finne neste /wiki/ som er under linje %maxline i vindu %r | inc -s %c }
+    }
+    dec %c
+    echo -s Vi har et resultat: %c -- $fline(%r,*/wiki/*,%c)
+    var %d %c
+  }
+
+
+  echo -s 12alias populate: Vindu: %r Wiki: %b Maxline(dato): %maxline ( $+ %dato $+ ) Wiki'a: %wiki.x Antall wikilinks å sjekke: %d
+
+  if (%dato) { echo -s Vi skal kun beregne fram til %dato i vindu %r - Scripte sånn at vi finner linjenummeret til ønsket dato | halt }
+
+  if (%maxline) { echo -s Vi skal kun beregne fram til og med linje %maxline i vindu %r }
+
+  var %max.lines $line(%r,0)
+  echo -s Det er %max.lines linjer i %r
+  echo -s Vår wikifile er %b
+
+
+
+  echo -s Finne progress (ferdigberegna linjer) i egen alias
+  var %a $progress(%r,%maxline)
+  if (%a) { echo -s Vi skal fortsette i linje %a }
+
+  echo -s Jobbe fra linje %a til og med %maxline hvor dokumentet inneholder %max.lines linjer
+
+  echo -s Det som er poenget nå, det er at vi skal søke etter /wiki/-ene, ikke linje for linje.
+
+  var %c 1
+  while ($fline(%r,*/wiki/*,%c) < %a) { echo -s Ferdigberegna kamper som inneholder wiki, wow! | inc %c }
+
+  echo -s Etter å ha talt opp ferdigberegna kamper med wiki, så skal vi se etter wikilink nummer %c
+  dec %c 
+
+  :wikiloop
+  inc %c
+  if (%c <= %d) {
+    echo -s Vi skal sjekke wikilink nummer %c
+    var -s %fline $fline(%r,*/wiki/*,%c)
+    var -s %line $line(%r,%fline)
+    var -s %wiki $gettok($gettok($gettok(%line,3,164),1,32),1-,32)
+    var -s %record $data(%wiki).record
+    if ($exists(%record)) { 
+      echo -s Alt ok 
+      cline 3 %r %fline
+      if ($3) { var %vindu $createwindow(%r).same | echo -s Vindulaging riktig? | halt } | else { var %vindu $createwindow(%r) }
+
+      if ($fline(@record.map,* $+ %wiki $+ *,0) > 0) { echo -s %wiki finnes allerede i @record.map | goto wikiloop }
+
+      aline @record.map %vindu %wiki
+      loadbuf %vindu %record
+      var -s %dato $gettok($gettok($gettok(%line,6,164),2,32),1-,32)
+      var -s %fline $fline(%vindu,* $+ %dato $+ *,1)
+      if (%fline) {
+        cline 12 %vindu %fline
+        echo -s Denne blåfargen burde da virke? -- Har vi en maxline? %maxline
+        } | else { 
+        echo -s Dato %dato IKKE funnet i %vindu 
+        if ($line(%vindu,1) == No matches found) { echo -s Ikke så rart, det er "no matches found" der... | goto wikiloop } | else { 
+          echo -s Sjekk vinduene %r og %vindu mot %b og %wiki 
+
+          var -s %format $ana.calc(%b,dato)
+          var -s %format2 $ana.calc(%wiki,dato)
+
+          echo -s Nå som vi vet formatene er %format og %format2 - hvem av disse er feil?
+
+
+
+          halt 
+        }
+        halt 
+      }
+
+      if (%r == @record) { echo -s Førstgangskjøring, tar vare på variabler | set %c.ba %c | set %d.ba %d }  
+
+      echo -s Populate: populate( [ %vindu ] , [ %wiki ] , [ %dato ] )
+      timer 1 0 { populate %vindu %wiki }
+
+      echo -s Populate etter iterasjon:
+      echo -s Goto next?
+      halt 
+    } | else { echo -s Aline @UFC.que, hvis ikke finnes, markere med rødt i %r og loope | halt }
+    halt
+  } | else { echo -s Ferdig med wikiloop | goto wikiloop }
+
+  echo -s Code ended, return -- %r -- %wiki -- %dato -- %maxline -- b: %b --
+
+  echo -s Nåværende variabler: %r - %b - %c - %d - %maxline
+  echo -s Vil endre til: %r.ba - %b.ba - %c.ba - %d.ba - %maxline.ba
+  inc -s %c.ba
+
+  if (%r == %r.ba) { echo -s inf loop | echo -s Alt er ferdig! | ana.calc $data(%r).record ok | goto end }
+
+  var -s %r %r.ba
+  var -s %b %b.ba
+  var -s %c %c.ba
+  var -s %d %d.ba
+  var -s %maxline %maxline.ba
+  goto wikiloop
+
+  halt
+
+
+
+  :loop
+  inc %a
+  if (%a > %maxline) { 
+    echo -s Ferdig
+    echo -s Litt tidlig til å si ok, hva med de andre vinduene? 
+
+    echo -s wiki2: %wiki2
+    var -s %fline $fline(%r,* $+ %wiki2 $+ *,0)
+    if (%fline == 1) {
+      var -s %line $fline(%r,* $+ %wiki2 $+ *,0)
+      var -s %line $line(%r,%line)
+      var -s %dato $gettok($gettok($gettok(%line,6,164),2,32),1-,21)
+    }
+
+    echo -s > populate - %r2 - %b - %dato -
+    if (error isin %b) { echo -s Error?! | halt }
+
+    timer 1 2 { populate %r2 %b %dato }
+    echo -s populatehalt | halt
+    return ok
+  } 
+
+  echo -s We got some more work to do, fortsetter i linje %a av %maxline av %max.lines
+
+  var -s %line $line(%r,%a)
+  if (!%line) { echo -s Tom linje, halt | halt }
+  if (/wiki isin %line) { 
+    echo -s Da vet vi at neste linje inneholder /wiki/, men finnes den?
+    var %wiki2 $gettok($gettok($gettok(%line,3,164),1,32),1-,32)
+    var %w2.file $data(%wiki2).record
+    if (!$exists(%w2.file)) { 
+      echo -s Wiki2-file does not exist! 
+      cline 4 %r %a
+      var %stopline %a
+      goto loop
+    }
+
+    if (%r == @record) { 
+      echo -s First time iteration
+      var -s %r2 $createwindow($right(%r,$calc($len(%r)-1)))
+      } | else { 
+      echo -s r: %r
+      ; var -s %w %r $+ .1
+      var -s %r2 $createwindow($right(%r,$calc($len(%r)-1)))
+      halt
+    }
+
+    var -s %w $right(%r,$calc($len(%r)-1))
+    if ($right(%w,1) isnum) { var -s %w %w $+ . }
+
+    echo -s Linja inneholder /wiki/ ( $+ %wiki2 $+ ), denne må vi loade inn i vindu som heter %r2 
+    loadbuf %r2 %w2.file | aline @record.map %r2 %wiki2 | cline 3 @record.map $line(@record.map,0)
+    echo -s Sjekk om %r2 er riktig
+    if (!%stopline) { cline 3 %r %a } | else { cline 10 %r %a }
+    goto loop
+
+  }
+
+  echo -s /wiki/ ikke funnet, looper | goto loop
+  :end
+}
+
+alias populate2 {
+  echo -s Second try of populate! Vindu: $1 File: $2
+
+  var %r $1
+  var %wiki $2
+  if (!%wiki) { echo -s " $+ $2 $+ " ikke mottatt (wiki) | return fail }
+
+  :begin
+  var -s %x $fline(%r,*/wiki/*,0)
+  if (%r == @record) { set -s %pop.x %x }
+
+  var %a 0
+  :loop
+  inc %a
+  if (%a > %x) { goto undone }
+  var %b $fline(%r,*/wiki*,%a)
+
+  var -s %line $line(%r,%b)
+  if ($numtok(%line,164) == 9) { cline 15 %r %b | goto loop }
+
+  var %wiki2 $gettok($gettok($gettok(%line,3,164),1,32),1-,32)
+  var %recordfile $data(%wiki2).record
+
+  if (error no wiki == %recordfile) { cline 5 %r %b | echo -s Noe er steingalt | halt }
+
+  if ($exists(%recordfile)) { 
+    ; Hadde vi kunnet, så hadde vi fargelagt matchende linje i %vindu2 med f.eks blått, men vinduene lages nedenfor...
+    if ($window(%r)) { cline 3 %r %b } | else { echo -s vindu %r ikke oppe? | halt }
+
+    var -s %vindu $createwindow(%r)
+    loadbuf %vindu %recordfile
+    var %checkname $checkname(%vindu)
+    var %endringer $gettok(%checkname,1,32)
+    if (%endringer == 0) { echo -s checkname av %vindu er ok, 0 endringer } | else { echo -s Endringer gjort! | halt }
+
+    var -s %dato $gettok($gettok($gettok(%line,6,164),2,32),1-,21)
+    var -s %fline $fline(%vindu,* $+ %dato $+ *,1)
+    if ((!%fline) && ($line(%vindu,1) == No matches found)) { echo -s No mathces found :) } 
+    elseif (%fline > 0) { echo -s Dato funnet | cline 12 %vindu %fline }
+    else { echo -s %dato fra %r ble ikke funnet i %vindu | halt }
+
+    var -s %alinex $line(@record.list,0)
+    aline @record.list %wiki ( $+ %r $+ ) -> %wiki2 ( $+ %vindu $+ ) Dato: %dato
+    var -s %line.record $line(@record.list,1)
+    if (!%line.record) { echo -s Linje finnes ikke i @record.list? | halt }
+    if (%alinex == $line(@record.list,0)) { echo -s Linje ikke skrevet til til @record.list | halt }
+    if ($line(@record.list,0) == 0) { echo -s Ingen linjer i @record.list? | halt }
+
+    timer 1 0 { populate2 %vindu %recordfile }
+    halt
+    } | else { 
+    cline 4 %r %b
+    echo -s %wiki2 eksisterer ikke, aliner @ufc.que (hvis nødvendig), ferdig med å sjekke %r for wikifiler, nå skal vi gå til neste steg
+
+    if ($fline(@ufc.que,* $+ %wiki2 $+ *,0) == 0) { 
+      echo -s %wiki2 lagt til i @UFC.que
+      aline @ufc.que %wiki2
+    }
+
+    goto undone
+  }
+
+  :undone
+  echo -s Begynner ny loop
+  var -s %x %pop.x
+  if (%a <= %x) { goto loop } | else { echo -s Ferdig i populate2 | return usikker }
+
+  echo -s Neste steg
+  halt
+  var -s %xun $fline(@record.list,undone*,0)
+  if (%xun == 0) { echo -s Ferdig med å se på undone, ingen linjer der, helt ferdig | return ok }
+
+
+  var %iter 0
+
+  :iter
+  inc -s %iter
+  var %undone 0
+
+  var -s %matchord undone $+ %iter
+
+
+  :unloop
+  inc -s %undone
+  var %xun $fline(@record.list,undone*,0)
+  if (%undone > %xun) { goto end }
+
+  echo -s Finne fram til %undone $+ . linja i @record.list - søke etter %matchord
+
+  var -s %un $fline(@record.list,%matchord $+ *,%undone)
+  if (!%un) { echo -s Fant ikke flere undone i @record.list? | halt }
+
+  var -s %un.line $line(@record.list,%un)
+
+  var -s %vindu $createwindow(%r)
+  var -s %wiki2 $gettok(%un.line,2,32)
+  var -s %record2 $data(%wiki2).record
+  loadbuf %vindu %record2
+  checkname %vindu
+  aline @record.map %vindu %wiki2
+  cline 3 @record.list %un
+
+  echo -s Replace line %un with a new one...
+  rline @record.list %un done %wiki2
+  halt
+  goto unloop
+
+  :end
+  return ok
+}
+
+alias checkName {
+  ; Goes through $1 (window) and checks every "no_link" if we have a wikilink in $data or if it's really is a no_link
+  ; Usage: Only $1 is needed
+
+  unset %endring
+  var %endringer 0
+
+  var -s %r $1
+
+  var %x $fline(%r,*no_link*,0)
+
+  var %a 0
+  :loop
+  inc %a
+  if (%a >= %x) { 
+    :endring
+    if (%endring) { 
+      echo -s Endring funnet og gjort i %r - oppdatere Recordfila (utifra %wiki $+ )
+
+      var -s %vindu $fline(@record.map,%r $+ *,1)
+      var -s %v.line $line(@record.map,%vindu)
+      var -s %wiki $gettok(%v.line,2,32)
+      var -s %recordfile $data(%wiki).record
+      if (%recordfile == null) { echo -s Kan ikke lagre recordfile... | return no save }
+      echo -s savebuf %r -> %recordfile
+      savebuf %r %recordfile
+      echo -s Sjekk %recordfile mot %r
+    }
+    echo -s Ferdig, %endringer endringer funnet 
+    return %endringer endringer
+  }
+  var %b $fline(%r,*no_link*,%a)
+  if (!%b) { goto loop }
+  var -s %line $line(%r,%b)
+  var %oppo $gettok(%line,3,164)
+  var %navn $gettok(%oppo,2-,32)
+  if (%navn == /a) { echo -s Veldig feil! | halt }
+  var %data $data(%navn)
+  var %num $gettok(%data,2,32)
+  var %num2 $gettok($gettok(%data,-2,32),1,32)
+  if (%num isnum) { echo -s 03 $+ %navn er en legitim no_link | goto loop } | elseif (%num2 == 1) {
+    echo -s 4Mismatch! Istedenfor no_link i linje %b i vindu %r $+ , så burde det istedenfor no_link være $gettok(%data,1,32)
+    var -s %replace $gettok(%data,1,32) %navn
+    var -s %1 $gettok(%line,1-2,164) $+ ¤ %replace ¤ $+ $gettok(%line,4-,164)
+    rline %r %b %1
+    inc %endringer
+    if (!%endring) { var -s %endring True }
+    goto loop
+  } | else { echo -s Flere treff funnet2 | halt }
+
+  echo -s ?
+}
+
+
+alias r.out {
+  ; Random outcome, used for debugging
+
+  var %a $read(data\ufc\layouts.txt,s,method) 
+  var %x $numtok(%a,46) 
+  var %b $rand(1, [ %x ] ) 
+  var %c $gettok(%a, [ %b ] ,46)
+  return %c
+}
+
+alias maxline {
+  ; Finne ut første linja hvor /wiki/ -> record.txt ikke finnes
+  var %r $1
+  echo -s alias maxline: %r
+
+  var %a 0
+  var %x $line(%r,0)
+
+  :loop
+  inc %a
+  if (%a > %x) { return ok }
+  var %b $fline(%r,*/wiki/*,%a)
+  if (%b > 0) {
+    var %line $line(%r,%b)
+    var %wiki $gettok($gettok($gettok(%line,3,164),1,32),1-,32)
+    var %recordfile $data(%wiki).record
+    if (error no wiki == %recordfile) { echo -s Noe er steingalt | halt }
+
+    if ($exists(%recordfile)) { goto loop } | else { 
+      echo -s Første missing wikilink ( $+ %wiki $+ ) funnet i linje %b i vindu %r 
+      cline 4 %r %b 
+      if ($fline(@ufc.que,* $+ %wiki $+ *,0) == 0) { 
+        echo -s %wiki lagt til i @UFC.que
+        aline @ufc.que %wiki
+      }
+      return %b 
+    }
+  }
+  return all
+}
+
+alias progress {
+  ; Denne alisen finner ut ($numtok) og fargelegger %r - til $2
+  var %r $1
+  var %x $2
+  var %z $line(%r,0)
+
+  var %a 1
+  while ($numtok($line(%r,%a),164) == 9) { cline 15 %r %a | inc %a }
+  return %a
+}
+
+
+
+
+
+alias ana.calc2 {
+  ; An alias to simulate fight outcomes for debugging purposes
+  ; It now is actually an own alias, with debugging optional.
+
+  ; 1 = Fighter A score, 2 = Fighter B score, 3 = Win/loss, 4 = Outcome (KO/sub/una), 5 = When in match that happened
+
+  ; var %debug 1
+
+  if (!%debug) { 
+    if (!$4) { return Not all parameters submitted } 
+
+    var -s %a $1
+    var -s %b $2
+    var -s %c $3
+    var -s %d $4
+    var -s %e $5
+    goto n
+  }
+
+
+  ; Debugging
+  var %a $rand(80,1600)
+  var %b $rand(80,1600)
+  var %r $rand(1,3) | if (%r <= 2) { var %c Win } | else { var %c Loss }
+  var %d $r.out
+  if (decision isin %e) { var %e 900 } | else { var %e $rand(1,900) }
+
+  :n
+  echo -s a = %a $+ , b = %b $+ , c = %c $+ , d = %d $+ , e = %e
+
+  var -s %string $1 $+ . $+ $2 $+ . $+ $3 $+ . $+ $4 $+ . $+ $5
+  while ($chr(32) isin %string) { echo -s Prøver å ta vekk mellomrommet i %string | var -s %string $remove( [ %string ] ,$chr(32)) }
+  var %file data\UFC\kalkuleringer.txt
+  if ($isfile(%file)) {
+    var -s %search $read( [ %file ] ,s, [ $+ [ %string ] ] )
+    if (%search) {
+      echo -s 3Calculation was already saved :)
+      return %search
+    }
+  }
+
+  echo -s This calculation hasn't been done before...
+
+  var %loop 0
+
+  :loop
+  inc %loop
+  if (%loop == 1) { var %ratio $calc(%a / %b) | var %a.ratio %ratio | var %a.ratiop $calc(%ratio * 100) $+ % }
+  if (%loop == 2) { var %ratio $calc(%b / %a) | var %b.ratio %ratio | var %b.ratiop $calc(%ratio * 100) $+ % }
+  if (%loop == 3) { goto c }
+
+  if (%ratio > 1) { 
+    var %ratio $calc(%ratio - 1) 
+    var %txt 3extra chance to win 
+    var %exp Win
+    var %ratiop $calc(%ratio * 100) $+ %
+    } | elseif (%ratio < 1) { 
+    var %ratio $calc(1 - %ratio)
+    var %txt 4extra chance to loose (underdog)
+    var %exp Loss
+    var %ratiop $calc(%ratio * 100) $+ %
+  } | else { var %txt extra chance to win | var %exp Win | var %ratiop 0 $+ % }
+
+  if (%loop == 1) { if (%exp == %c) { var %txt2 , and he did } | else { var %txt2 , but he didn't - what a shocker! } }
+  if (%loop == 2) { if (%exp == %c) { var %txt2 , but he didn't - what a shocker! } | else { var %txt2 , and he did } }
+
+  if (%loop == 1) { var %fighter A } | else { var %fighter B }
+  echo -s Fighter %fighter has a %ratiop %txt $+ %txt2
+  goto loop
+
+  :c
+
+  var %cp $calc(%a + %b)
+  var %battle $calc(%cp / 2)
+  var %max $calc(%battle / 4)
+  var %ko.max $calc(%max * 1.2)
+
+  echo -s %a + %b = %cp / 2 = %battle / 4 = %max * 20% = %ko.max
+  var %diff $calc(%ko.max - %max)
+
+  ; Ta vekk %h, den ble brukt i tidligere kode. Fiks/rensk opp i variabler
+  var %h %diff
+
+  echo -s Extra points if win: %max
+  echo -s Extra points if KO win: %ko.max
+  echo -s Difference between a win and a KO win is: %diff
+
+  echo -s Fighter A can improve by $calc($calc(%max / %a) * 100) $+ % if win, $calc($calc(%ko.max / %a) * 100) $+ % if KO win (no over/underdog-ratio calculated)
+  echo -s Fighter B can improve by $calc($calc(%max / %b) * 100) $+ % if win, $calc($calc(%ko.max / %b) * 100) $+ % if KO win (no over/underdog-ratio calculated)
+
+  ; Examples
+
+  ; Fighter A wins, as overdog
+  if (%a.ratio > 1) {
+    ; Jeg vil ha x% av diff som straff for dominanse
+    var %mod $calc(%a.ratio - 1)
+    var %mod.pts $calc(%h * %mod)
+    echo -s If Fighter A wins by Decision, and as 0% overdog, he would have a score of $calc(%a + %max) - But as a $calc($calc(%a.ratio - 1) * 100) $+ % overdog, his score could be $calc(%a + %max - %mod.pts)
+    echo -s If Fighter A wins by KO, and as 0% overdog, he would have a score of $calc(%a + %ko.max) - But as a $calc($calc(%a.ratio - 1) * 100) $+ % overdog, his score could be $calc(%a + %ko.max - %mod.pts)
+    echo -s If Fighter A looses by Decision, and as 0% overdog, he would have a score of $calc(%a - %max) - But as a $calc($calc(%a.ratio - 1) * 100) $+ % overdog, his score could be $calc(%a - %max - %mod.pts)
+    echo -s If Fighter A looses by KO, and as 0% overdog, he would have a score of $calc(%a - %ko.max) - But as a $calc($calc(%a.ratio - 1) * 100) $+ % overdog, his score could be $calc(%a - %ko.max - %mod.pts)
+  }
+
+  ; Fighter A wins, as underdog
+  if (%a.ratio < 1) {
+    var %mod $calc(1 - %a.ratio)
+    var %mod.pts $calc(%h * %mod)
+    echo -s If Fighter A looses by Decision, and as 0% underdog, he would have a score of $calc(%a - %max) - But as a $calc($calc(1 - %a.ratio) * 100) $+ % underdog, his score could be $calc(%a - %max + %mod.pts)
+    echo -s If Fighter A looses by KO, and as 0% underdog, he would have a score of $calc(%a - %ko.max) - But as a $calc($calc(1 - %a.ratio) * 100) $+ % underdog, his score could be $calc(%a - %ko.max + %mod.pts)
+    echo -s If Fighter A wins by Decision, and as 0% underdog, he would have a score of $calc(%a + %max) - But as a $calc($calc(1 - %a.ratio) * 100) $+ % underdog, his score could be $calc(%a + %max + %mod.pts)
+    echo -s If Fighter A wins by KO, and as 0% underdog, he would have a score of $calc(%a + %ko.max) - But as a $calc($calc(1 - %a.ratio) * 100) $+ % underdog, his score could be $calc(%a + %ko.max + %mod.pts)
+  }
+
+  echo -s --- (skille mellom Fighter A og Fighter B) ---
+
+  ; Figter B wins, as overdog
+  if (%b.ratio > 1) {
+    var %mod $calc(%b.ratio - 1)
+    var %mod.pts $calc(%h * %mod)
+    echo -s If Fighter B wins by Decision, and as 0% overdog, he would have a score of $calc(%b + %max) - But as a $calc($calc(%b.ratio - 1) * 100) $+ % overdog, his score could be $calc(%b + %max - %mod.pts)
+    echo -s If Fighter B wins by KO, and as 0% overdog, he would have a score of $calc(%b + %ko.max) - But as a $calc($calc(%b.ratio - 1) * 100) $+ % overdog, his score could be $calc(%b + %ko.max - %mod.pts)
+    echo -s If Fighter B looses by Decision, and as 0% overdog, he would have a score of $calc(%b - %max) - But as a $calc($calc(%b.ratio - 1) * 100) $+ % overdog, his score could be $calc(%b - %max - %mod.pts)
+    echo -s If Fighter B looses by KO, and as 0% overdog, he would have a score of $calc(%b - %ko.max) - But as a $calc($calc(%b.ratio - 1) * 100) $+ % overdog, his score could be $calc(%b - %ko.max - %mod.pts) 
+  }
+
+  ; Figher B wins, as underdog
+  if (%b.ratio < 1) {
+    var %mod $calc(1 - %b.ratio)
+    var %mod.pts $calc(%h * %mod)
+    echo -s If Fighter B looses by Decision, and as 0% underdog, he would have a score of $calc(%b - %max) - But as a $calc($calc(1 - %b.ratio) * 100) $+ % underdog, his score could be $calc(%b - %max + %mod.pts)
+    echo -s If Fighter B looses by KO, and as 0% underdog, he would have a score of $calc(%b - %ko.max) - But as a $calc($calc(1 - %b.ratio) * 100) $+ % underdog, his score could be $calc(%b - %ko.max + %mod.pts)
+    echo -s If Fighter B wins by Decision, and as 0% underdog, he would have a score of $calc(%b + %max) - But as a $calc($calc(1 - %b.ratio) * 100) $+ % underdog, his score could be $calc(%b + %max + %mod.pts)
+    echo -s If Fighter B wins by KO, and as 0% underdog, he would have a score of $calc(%b + %ko.max) - But as a $calc($calc(1 - %b.ratio) * 100) $+ % underdog, his score could be $calc(%b + %ko.max + %mod.pts)
+  }
+
+  echo -s --- (skille mellom eksempler og resten) ---
+
+  if (N/A isin %d) { echo -s N/A funnet, vi setter den til Unanamoius Decision, siden det er det mest vanlige | var -s %d decision }
+
+  if (Decision isin %d) { 
+    if (majority isin %d) { return %score $calc(%a + $calc(%max / 3)) $calc(%b - $calc(%max / 3)) }
+    if (split isin %d) { return %score $calc(%a + $calc(%max / 3)) %score $calc(%b - $calc(%max / 3)) }
+
+    ; Assume "Unanamoius"
+    return %score $calc(%a + %max) $calc(%b - %max)
+  }
+
+  if ((KO isin %d) || (submission isin %d)) { 
+
+    ; TODO 05.10.2010: Lage loop sånn at jeg får beregna begge fighterne
+    echo -s --- KO eller submission found ---
+
+    var %max.ba %max
+
+    var %max $calc(%max * 1.2)
+    var %diff $calc(%max - %max.ba)
+
+    echo -s Because this was a decisive win or loss, the maximum scorechange has been upped by 20%, to: %max (from %max.ba $+ ) Change: %diff
+    echo -s Either fighter has to gain or loose more than %max.ba
+    echo -s The extra points ( $+ %diff $+ ) is determined by Overdog/Underdog Ratio
+
+
+    ; 05.10.2010: Time calulations could be here!
+    ; But because I wanted to get started, I skipped the Time Calulations
+
+    var %h %diff
+
+    ; Her starter de forskjellige utregningene for de forskjellige fighterne?
+
+    var %loop2 0
+    :loop2
+    inc %loop2
+    if (%loop2 == 1) { var %ratio %a.ratio | var %pts %a | var %fighter A }
+    if (%loop2 == 2) { 
+      if (!%score) { echo -s Noe er feil, score fantes ikke | halt | return %score }
+      var %score.ba %score 
+      var %ratio %b.ratio 
+      var %pts %b 
+      var %fighter B 
+    if (%c == Win) { var -s %c Loss } | else { var -s %c Win } }
+    if (%loop2 > 2) { 
+      echo -s Ferdig. Fint om vi kunne gi en absolutt fullstening analyse av beregningene... % + for Winning Fighter osv...
+
+      ; %file and %string already exists
+      if ($isfile(%file)) {
+        var -s %search $read( [ %file ] ,s, [ $+ [ %string ] ] )
+        if (!%search) { write %file %string %score.ba %score | echo -s Calculation saved :) } | else { echo -s Calculation was already saved :) }
+        } | else { 
+        ; echo -s Assuming the folder exists :( 
+        write %file %string %score.ba %score 
+      }
+
+      echo -s returning %score.ba %score
+      return %score.ba %score
+    }
+
+    ; echo -s Figher A ratio: %a.ratio
+    ; echo -s Figher B ratio: %b.ratio
+
+    echo -s Ratio for Fighter %fighter $+ : %ratio -- Points for Fighter %fighter $+ : %pts
+
+    if ((%ratio > 1) && (%c == Win)) { 
+      echo -s Fighter %fighter 3winning as an overdog (Overflødig Poeng trukket fra pga forventet win)
+
+      var %mod $calc(%ratio - 1)
+      var %mod.pts $calc(%h * %mod)
+
+      echo -s Etter at oddsen har blitt regna inn, så er gainet redusert til %mod.pts
+
+      var -s %score $calc($calc(%pts + %max - %mod.pts))
+      echo -s Ferdigkalkulert score for Fighter %fighter $+ : %score
+      goto loop2
+    }
+    if ((%ratio < 1) && (%c == Win)) { 
+      echo -s Fighter %fighter winning as an underdog (Poeng lagt til)
+      var -s %mod $calc(1 - %ratio)
+      var -s %mod.pts $calc(%h * %mod)
+      var -s %score $calc(%pts + %max + %mod.pts)
+      goto loop2
+    }
+    if ((%ratio > 1) && (%c == Loss)) { 
+      echo -s Fighter %fighter loosing as an overdog
+      echo -s Ratio: %ratio
+      var -s %mod $calc(%ratio - 1) 
+      var -s %mod.pts $calc(%h * %mod)
+      var -s %score $calc(%pts - %max - %mod.pts) 
+      goto loop2
+    }
+    if ((%ratio < 1) && (%c == Loss)) { 
+      echo -s Fighter %fighter 4loosing as an underdog
+      var -s %mod $calc(1 - %ratio)
+      var -s %mod.pts $calc(%h * %mod)
+      var -s %score $calc(%pts - %max + %mod.pts) 
+      goto loop2
+    }
+
+    echo -s Ratio-kalkuleringer failed...
+    if (%c == Win) { var -s %score $calc(%pts + %max) | goto loop2 }
+    if (%c == Loss) { var -s %score $calc(%pts - %max) | goto loop2 }
+    echo -s Outcome failed
+  }
+
+
+  ; Draw
+  if ((%a == %b) && (%d == Draw)) { 
+    var %loop2 2
+    var %score.ba 100
+    var %score 100
+
+    echo -s goto virker ikke?!
+
+    echo -s Ferdig. Fint om vi kunne gi en absolutt fullstening analyse av beregningene... % + for Winning Fighter osv...
+
+    ; %file and %string already exists
+    if ($isfile(%file)) {
+      var -s %search $read( [ %file ] ,s, [ $+ [ %string ] ] )
+      if (!%search) { write %file %string %score.ba %score | echo -s Calculation saved :) } | else { echo -s Calculation was already saved :) }
+      } | else { 
+      ; echo -s Assuming the folder exists :( 
+      write %file %string %score.ba %score 
+    }
+
+    echo -s returning %score.ba %score
+    return %score.ba %score
+
+    goto loop2
+  }
+
+  ; QuickFix for Draw!
+  if ((%d == Draw) || (%d == Technical Draw)) { return %a %a }
+
+  return error.end
+}
+
+
+
+alias ana2 {
+  echo -s SKAL IKKE BRUKES
+  halt
+  var %txt Boksanaylse ferdig, nå går vi igjennom fightrecord
+  echo -s %txt
+  if ($dialog(wiki)) { did -a wiki 20 %txt }
+
+
+  var -s %score 100
+
+  var -s %x $line(@record,0)
+  var %a 0
+
+  :loop
+  inc %a
+  if (%a > %x) { echo -s Ferdig. Scoren ble %score | window -c @working | return }
+
+  ; Win ¤ 1-0 ¤ /wiki/Tony_Halme Tony Halme ¤ Submission (Rear Naked Choke) ¤ UFC 13: The Ultimate Force ¤ 865019918 May 30 1997 ¤ 1 ¤ 1:00 60
+
+  echo -s  Fight nr. %a av %x 
+  var -s %line $line(@record, [ %a ] )
+
+  if (%a == 1) {
+    echo -s Første fight. Vanskelig å anta noe da... Men hva skal vi anta?
+    ; WinRatio
+    var %pre.wr 100
+    ; Does it end before decision?
+    var %pre.ends 100
+    ; How often does he fight? Every 6th UFC-event or 6 months apart. More often=bonus
+    var %pre.often 6
+    } | else {
+    echo -s Må få henta ut disse 17.1.2010
+    var -s %pre.wr 100
+    ; Does it end before decision?
+    var -s %pre.ends 100
+    ; How often does he fight? Every 6th UFC-event or 6 months apart. More often=bonus
+    var -s %pre.often 6
+  }
+
+
+
+  ; 15.1.2010: Fra @record, så er det ferdig-utregna tid
+  var -s %round $gettok($gettok(%line,7,164),1-,32)
+  var -s %tid $gettok($gettok(%line,8,164),2,32)
+
+  ; Errorchecking - may not be needed (15.1.2010)
+  if (!%round) { echo -s "round" fantes ikke | halt }
+  if (!%tid) { echo -s "tid" fantes ikke | halt }
+
+  if ((%round == 1) && (%tid > $calc(60*5*3))) { 
+    echo -s Kun en runde, men likevel over $calc(60*5*3) sekunder i tid? Sikkert i gamle dager, setter tid ned til 100%
+    var -s %tid $calc(60*5*3)
+  }
+
+
+
+  var %p.tid $calc(%tid / $calc(60*5*3))
+  var %p.tid.txt $round($calc($calc(%p.tid) * 100),1) $+ %
+  echo -s Brukte bare %p.tid.txt av tida
+
+  ; Hvor mye som skal endres.
+  ; Hvis lite tid brukt og win = Stor endring +
+  ; Hvis mye tid brukt og win = Mindre endring +
+  ; Hvis mye tid brukt og loss = Mindre endring -
+  ; Hvite lite tid brukt og loss = Stor endring - 
+  var %pts $calc(1-%p.tid)
+  if (%pts == 0) { 
+    echo -s Max tid brukt, setter det til 15% da...
+    var -s %pts 0.15
+  }
+
+  var %pts.txt $round($calc($calc(%pts) * 100),1) $+ %
+  echo -s Pga tid brukt ( $+ %p.tid.txt $+ ), så blir poeng-prosenten på %pts.txt
+
+
+  var %max.endring $calc(%score * 0.3)
+  echo -s Max endring(30% av gjeldene score ( $+ %score $+ )): %max.endring
+
+  echo -s Prosentvis endring av score: %pts.txt
+  var %endring $calc(%max.endring * %pts)
+  echo -s Endring av score: %endring poeng
+
+  echo -s %score -> %max.endring * %max.endring * %pts.txt = %endring
+
+  if ($gettok($gettok(%line,1,164),1-,32) == Win) {
+    var %o.score %score
+    var %score $calc(%score + %endring)
+    echo -s %o.score + %endring = %score
+  }
+  if ($gettok($gettok(%line,1,164),1-,32) == Loss) {
+    var %o.score %score
+    var %score $calc(%score - %endring)
+    echo -s %o.score - %endring = %score
+  }
+  if ($gettok($gettok(%line,1,164),1-,32) == Draw) { echo -s Draw er ukjent for oss, halt | halt }
+  goto loop
+}
+
+alias ana.events {
+  ; En alias som analyserer "List of UFC Events" for å finne den neste eventen.
+  ; Skulle gjerne ha brukt alias ana til dette, for å spare bytes, men det får jeg gjøre i fremtiden. Nå er det i egen alias.
+
+  ; Igjen brukes @wiki (noe som jo er bra...)
+
+  ; Fra 19.08.2010, så omskrives den til å kun vise neste event, til å vise alle interessante eventer (de med announced matchup)
+
+  unset %wiki.eventurl.ba
+  unset %wiki.eventurl
+  unset %event
+  unset %events
+
+  ; Finne et sted i dokumentet som indikerer på at vi er på riktig sted.
+  var %line $fline(@wiki, *Attendance</th>*,1) 
+  if (!%line) { 
+    echo -s Feilaktig data i @wiki 
+    var %a $fline(@wiki,<title>*,1)
+    var %l $line(@wiki,%a)
+    echo -s Title: %l
+    return null 
+  }
+
+  inc %line 3
+
+  echo -s Vi starter på linje %line - $line(@wiki,%line)
+
+  ; Need to use a new method for this :( 18.10.2010
+  echo -s Find out how many, and where.
+
+  var -s %xtr $fline(@wiki,<tr>,0)
+  var -s %xl $line(@wiki,0)
+
+  var %tr 0
+  ; tr-loop
+  :trl
+  inc %tr
+  if (%tr > %xtr) { echo -s noe er veldig feil | halt }
+
+  var -s %trln $fline(@wiki,<tr>,%tr)
+  if (%trln < %line) { goto trl }
+  dec -s %tr
+
+  echo -s Vi skal begynne i linje $fline(@wiki,<tr>,%tr) som inneholder $line(@wiki,$fline(@wiki,<tr>,%tr))
+
+  var %block 8
+  dec %line %block
+
+  echo -s Loop starts (alias ana.events)
+
+  :loop
+  if (%wiki.eventurl) { var -s %wiki.eventurl.ba %wiki.eventurl | echo -s Backup done }
+  if (%no) { var -s %no.ba %no }
+  if (%asctime) { var -s %asctime.ba %asctime }
+  if (%event) { var -s %event.ba %event }
+
+  inc -s %tr
+  var -s %line $fline(@wiki,<tr>,%tr) | inc -s %line
+
+  ; inc -s %line %block
+
+  : Finne event-nummeret (Nr. 166 er f.eks UFC 124)
+  var -s %no $line(@wiki, [ %line ] ) 
+  var -s %no $get2(%no)
+
+  if (%no == TBA) { 
+    echo -s "TBA" funnet, looper 
+    ; inc %line 
+    unset %no
+    goto loop 
+  }
+  if (%no == TBD) { 
+    echo -s "TBD" funnet, looper 
+    dec -s %line 
+    unset %no
+    goto loop 
+  }
+  if (%no == td) { 
+    echo -s "td" funnet, looper 
+    ; inc %line
+    unset %no
+    goto loop 
+  }
+
+  if (%no !isnum) { echo -s 4Nummeret er ikke et tall (test) | halt }
+
+  ; Finne event-navnet og derfra finne wiki-urlen
+  inc -s %line
+  var -s %event $line(@wiki, [ %line ] ) 
+  if (%event == <td></td>) { unset %event | goto loop }
+
+  var -s %event $get2(%event)
+
+  if (!%event) { echo -s Noe er galt, savner event | halt }
+
+  ; Finne datoen for eventet
+  inc -s %line
+  var -s %date $line(@wiki, [ %line ] ) 
+  if ($numtok(%date,32) <= 2) { echo -s Ikke nok "ord", looper | goto loop }
+  var -s %date $get2(%date) 
+  var -s %ctime $ctime(%date) 
+  var -s %asctime $asctime(%ctime,dd.mm.yyyy)
+
+  if (!%ctime) { echo -s 4ctime er tom | dec -s %line 2 | halt | goto loop }
+
+  ; Gammel kode. Beholdes for å vise hvordan man viser neste event.
+  ; if (%ctime > $ctime) { 
+  ;  var -s %event.ba %event
+  ;  echo -s Eventen ( $+ %event $+ ) er i framtid, looper 
+  ;  dec %line 2
+  ;  goto loop
+  ; }
+
+
+  echo -s Riktig event ( $+ %event $+ / $+ %wiki.eventurl $+ ) funnet! %ctime vs $ctime eller $asctime(%ctime,dd.mm.yyyy) og $asctime($ctime,dd.mm.yyyy)
+  set -s %events %events %event %wiki.eventurl ¤
+
+  if ($ctime > %ctime) { 
+    echo -s Ritkig event, men vi har passert! (Finne forrige, *.ba)
+
+    ; var -s %asctime %asctime.ba
+    ; var -s %no %no.ba
+    ; var -s %wiki.eventurl %wiki.eventurl.ba
+    ; var -s %event %event.ba
+
+    echo -s Riktig event er %event.ba og Wiki-urlen til den er %wiki.eventurl.ba
+    echo -s Events å sjekke: %events
+    echo -s halt
+    var -s %end end
+  }
+
+  var %asc.now $asctime(dd.mm.yyyy)
+  :next
+  var %txt Nr. %no Navn: %event Dato: %asctime
+
+  if (%asc.now == %asctime) { echo -s I dag! =) | var %dag (i dag! =) }
+
+  echo -s %txt %dag
+  if ($dialog(wiki)) { 
+    did -a wiki 20,21 $strip(%txt) %dag 
+  }
+
+  dec -s %line 2
+  if (%end) { goto end }
+  echo -s På'n igjen...
+  goto loop
+
+  :end
+  echo -s Nå må vi få tak i %wiki.eventurl - wiki.eventurl!
+  echo -s Skriv "/wiki event" for å fortsette
+  echo -s Interessante events: %events
+  if (%end) { halt }
+}
+
+alias ana.event {
+  ; En alias som analyserer "UFC_105" (eller current event) for å finne kampene
+  ; Skulle gjerne ha brukt alias ana til dette, for å spare bytes, men det får jeg gjøre i fremtiden.
+
+  ; 20.08.2010: Official Fight Card finnes i fremtidige (ikke-gjennomførte) events.
+  ; For å finne gamle events (gjennomførte), så må vi søke fra "Results" og nedover.
+
+  write -c wiki.txt
+  echo -s Finner "official fight card"
+  var -s %line $fline(@wiki, *Official fight card*,1)
+
+  ; 17.08.2010
+  ; Hvis "toclevel" finnes, så kan vi bruke dette til å finne ut på over hvor mange seksjoner kampene er fordelt over.
+
+  if (!%line) { 
+    echo -s "official fight card" fantes ikke! 
+    echo -s Prøver alias ana.event2 istedenfor (for gjennomførte events)
+    ana.event2
+    return
+  }
+
+  echo -s Vi skal bruke alias ana.event videre
+
+  var %line2 $line(@wiki, %line)
+  if (toclevel isin %line2) { 
+    echo -s "toclevel" funnet, tar neste treff. Todo(17.08.2010): Lage liste/map over sida og seksjoner?
+    var -s %line $fline(@wiki, *Official fight card*,2) 
+  }
+
+  inc -s %line 2
+
+  var %kampnummer 0
+  var %skip 0
+
+  :loop
+  inc -s %line
+  var -s %linetxt $line(@wiki, [ %line ] )
+
+  if (%linetxt == </ul>) { 
+    inc %skip
+    if (%skip >= 3) { goto end }
+    inc %line 2 
+    goto loop 
+  }
+
+  if (%linetxt == <ol class="references">) { goto end }
+
+  ; 60 = >, 62 = <
+  if (championship isin %linetxt) {
+    echo -s Det er visst en tittelkamp, men vi må renske før vi sender det videre til alias get3
+
+    ; Forutsetter at linja starter med "<li>" uansett.
+    ; Fjerner linken/feltet med tittelkamp.
+
+    echo -s Prøver å fjerner "</a>" inni der...
+
+    var -s %linetxt <li> $+ $gettok(%linetxt,3-,62) $+ >
+
+
+    ; Ny
+    var -s %line3 < $+ $gettok(%linetxt,1,60) bout:
+    var -s %line4 < $+ $gettok(%linetxt,3-,60)
+    ; var -s %line4 $gettok(%linetxt,3-,62)
+
+    var -s %linetxt %line3 $+ %line4
+    echo -s Er vi fornøyde?
+  }
+
+
+  inc -s %kampnummer
+
+  ; Weight Class, 1st contender, 2nd contender
+  ; 14.11.2009 - Kunne ha gjort det i én kalkulasjon, istedenfor tre ganger i samme string
+
+  var -s %wc $get3(%linetxt).wc
+  var -s %1c $get3(%linetxt).1c
+  var -s %2c $get3(%linetxt).2c
+
+  ; Tydeligvis ikke denne aliasen som /aliner til dialogen
+  ; Tror likevel jeg vil ha den her, for moro skyld (01.10.2010)
+  if (%wc == knockout) { echo -s "Knockout" er mottat, indikasjon på at vi har gått for langt | goto end }
+
+  if ((%wc) && (%1c) && (%2c)) {
+    var -s %xx $numtok( [ %wc ] ,32) 
+    var -s %wc $gettok( [ %wc ] , 1 - $calc(%xx - 1), 32)
+    echo -s kamp %kampnummer $+ : %1c mot %2c i vektklassen %wc
+    if ($dialog(wiki)) { did -a wiki 20,22 %kampnummer $+ : %1c mot %2c i vektklassen %wc }
+    goto loop
+  } | else { echo -s Noe er ganske feil! alias ana.event, mangler fra alias get3 | goto end }
+  :end
+  echo -s Ingen flere kamper... :) Totalt %kampnummer kamper
+}
+
+alias ana.event2 {
+  echo -s Brukes til å finne kamper i gjennomførte events...
+
+  ; En alias som analyserer "UFC_105" for å finne kampene. Må være gjennomførte events, der hvor vi søker fra "Results" og nedover
+
+  ; 20.08.2010: Usikker på hva vi bruker wiki.txt til
+  write -c wiki.txt
+
+  echo -s Finner "Results"
+  var -s %line $fline(@wiki, *Results*,1)
+
+  ; 17.08.2010
+  ; Hvis "toclevel" finnes, så kan vi bruke dette til å finne ut på over hvor mange seksjoner kampene er fordelt over.
+
+  if (!%line) { 
+    echo -s %wiki.url
+    echo -s 4"Results" fantes ikke! (No matches on the card (UFC $did(wiki,17) $+ ) yet)
+    if ($dialog(wiki)) { did -a wiki 20 No matches on the card (UFC $did(wiki,17) $+ ) yet }
+    halt
+  }
+
+  var %line2 $line(@wiki, %line)
+  if (toclevel isin %line2) { 
+    echo -s "toclevel" funnet, tar neste treff. Todo(17.08.2010): Lage liste/map over sida og seksjoner?
+    var -s %line $fline(@wiki,*Results*,2)
+  }
+
+  inc -s %line 3
+  ; Nå er vi på riktig linje i forhold til første kamp.
+  dec -s %line 6
+
+  var %kampnummer 0
+  var %skip 0
+
+  var %x $fline(@wiki,<li>*,0)
+  var %a 1
+  while ($fline(@wiki,<li>*, [ %a ] ) < %line) { inc -s %a }
+  echo -s $fline(@wiki,<li>*, [ %a ] )
+  echo -s Alternate version:
+  var -s %linetxt $line(@wiki, $fline(@wiki,<li>*, [ %a ] ) )
+
+  dec -s %a
+  :loop
+  inc -s %a
+  if (%a > %x) { goto end }
+  var -s %line $fline(@wiki,<li>*, [ %a ] )
+
+
+  :again
+  var -s %linetxt $line(@wiki, [ %line ] )
+  if (fight of the night isin %linetxt) { goto end }
+
+  ; Vi trengte visst denne kodesnutten likevel (20.08.2010)
+  ; if (%linetxt == </ul>) { inc %line 3 | inc %skip | goto again }
+  ; if (%linetxt == </dl>) { inc %line 2 | inc %skip | goto again }
+  ; if (%linetxt == <ul>) { inc %line 3 | inc %skip | goto again }
+  ; if (%linetxt == <dl>) { inc %line 4 | inc %skip | goto again }
+
+
+  ; Hvis vi har fått nok av feilbom...
+  if (%skip >= 3) { echo -s Gidder ikke å prøve mer! | goto end }
+
+  ; I denne aliasen incer vi med 6
+  ; Skjønte ikke de tre neste linjene, er trøtt. 20.08.2010
+  ; inc %line 6
+  ; goto loop 
+  ; }
+
+  ; 60 = >, 62 = <
+
+  ; Små justeringer måtte til fra alias ana.event til denne
+  if (championship isin %linetxt) {
+    echo -s Det er visst en tittelkamp, men vi må renske før vi sender det videre til alias get3
+
+    ; Forutsetter at linja starter med "<li>" uansett.
+    ; Fjerner linken/feltet med tittelkamp.
+
+    var -s %linetxt <li> $+ $gettok(%linetxt,3-,62) $+ >
+
+    echo -s Prøver å fjerner "</a>" inni der...
+
+    var -s %line3 < $+ $gettok(%linetxt,1-2,60) bout: $+ $chr(32)
+    var -s %line4 < $+ $gettok(%linetxt,4-,60)
+    ; var -s %line4 $gettok(%linetxt,3-,62)
+
+    var -s %linetxt %line3 $+ %line4
+    echo -s Er vi fornøyde?
+  }
+
+  inc -s %kampnummer
+
+  ; Weight Class, 1st contender, 2nd contender
+  ; 14.11.2009 - Kunne ha gjort det i én kalkulasjon, istedenfor tre ganger i samme string
+
+  var -s %wc $get3(%linetxt).wc
+  var -s %1c $get3(%linetxt).1c
+  var -s %2c $get3(%linetxt).2c
+
+  if (%wc == knockout) { echo -s "Knockout" er mottat, indikasjon på at vi har gått for langt | goto end }
+
+  if ((%wc) && (%1c) && (%2c)) {
+    var -s %xx $numtok( [ %wc ] ,32) 
+    var -s %wc $gettok( [ %wc ] , 1 - $calc(%xx - 1), 32)
+    echo -s kamp %kampnummer $+ : %1c mot %2c i vektklassen %wc
+
+    if ($dialog(wiki)) { did -a wiki 20 %kampnummer $+ : %1c mot %2c i vektklassen %wc }
+    goto loop
+  } | else { echo -s Noe er ganske feil! alias ana.event2, mangler fra alias get3 | return }
+
+  :end
+  echo -s Ingen flere kamper... :) Totalt %kampnummer kamper
+
+
+
+}
+
+
+alias get2 {
+  var %a $1-
+  if ($chr(44) isin %a) { var -s %a $replace(%a,$chr(44),$chr(32)) }
+
+  echo -s alias get2: %a
+
+  var -s %c1 $numtok(%a,60)
+  var -s %c2 $numtok(%a,62)
+
+  echo -s Prosessering (alias get2)
+
+
+  if ((%c1 == 2) && (%c2 == 2)) {
+    var -s %b $gettok( [ %a ] ,1,60)
+    var -s %c $gettok( [ %b ] ,-1,62)
+    return %c
+  }
+
+  if ((%c1 == 4) && (%c2 == 4)) {
+    var -s %b $gettok( [ %a ] ,2,60)
+    ; Denne var helt på jordet i list 20 i dialogen
+    var -s %c $get2($gettok( [ %b ] ,-2,62))
+    if (!%c) { 
+      echo -s C bomma...
+      var -s %c $gettok( [ %a ] ,4,34)
+    }
+    return %c
+  }
+
+  if ((%c1 == 6) && (%c2 == 6)) {
+    set -s %wiki.eventurl $gettok(%a,2,34)
+    set -s %event $gettok(%a,4,34)
+    return %event
+  }
+
+  if ((%c1 == 10) && (%c2 == 10)) {
+    var -s %b $gettok( [ %a ] ,10,34)
+    set -s %wiki.eventurl $gettok(%a,8,34)
+    var -s %c $gettok( [ %b ] ,-1,62)
+    return %c
+  }
+
+  if ((%c1 == 14) && (%c2 == 14)) {
+    set -s %wiki.eventurl $gettok(%a,2,34)
+    set -s %event $gettok(%a,4,34)
+    return %event
+  }
+
+  if ((%c1 == 22) && (%c2 == 22)) {
+    set -s %wiki.eventurl $gettok(%a,2,34)
+    set -s %event $gettok(%a,4,34)
+    return %event
+  }
+
+  echo -s 4Feil i alias get2!
+  halt
+}
+
+alias get3 {
+  ; 20.08.2010: alias ana.event2 brukes også denne aliasen her. Vi får se om det skaper noen problemer...
+  echo -s alias get3: $1-
+  var %a $1-
+  if (knockout of the night isin %a) { return knockout }
+
+  var -s %c1 $numtok(%a,60)
+  var -s %c2 $numtok(%a,62)
+
+  ; 26 er added weight class, 24(?) er uten
+
+  ; 14.11.09 - Husker ikke hva "= 2" og "= 6" er...
+  ; Brukes i alias ana.event
+
+  if ((%c1 == 2) && (%c2 == 2)) {
+    var -s %b $gettok( [ %a ] ,1,60)
+    var -s %c $gettok( [ %b ] ,-1,62)
+    echo -s Returnerer %c
+    return %c
+  }
+
+  if ((%c1 == 6) && (%c2 == 6)) {
+    var -s %b $gettok( [ %a ] ,3,60)
+    set -s %wiki.eventurl $gettok(%b,2,34)
+    var -s %c $gettok( [ %b ] ,-1,62)
+    echo -s Returnerer %c
+    return %c
+  }
+
+  ; For alias ana.event2
+
+  ; 01.10.2010
+  ; Copypasted fra 18
+  ; Kan se ut som vanlig 18, UTENOM at siste fighter ikke har wikilink
+  if ((%c1 == 16) && (%c2 == 16)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,8,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,14,60)
+
+    set -s %d.link $gettok(%d,2,34)
+    ; 01.10.2010 - Får HÅPE at selv om denne gir feil verdi videre, så blir det ikke input i "databasen"
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    ; echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+    echo debughalt
+    halt
+  }
+
+  if ((%c1 == 18) && (%c2 == 18)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,8,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,15,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    ; echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  ; For alias ana.event2
+
+  if ((%c1 == 22) && (%c2 == 22)) {
+    ; Catchweight / fight med bare en wikilink (første)
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+    if (a href isin %v) {
+      var -s %v $gettok($gettok( [ %a ] ,2,62),1,58)
+    }
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,10,60)
+    if (a href isin %b) { var -s %b $gettok( [ %a ] ,7,60) }
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,19,60)
+    if (/span isin %d) { var -s %d $gettok( [ %a ] ,13,60) }
+    set -s %d.link $gettok(%d,2,34)
+    if ((span isin %d) && (!%d.link )) { var -s %d.link /wiki/no_link }
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+    if (%d == /span>) { echo -s 4Her er det en feil | halt }
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+
+  if ((%c1 == 22) && (%c2 == 22)) {
+    echo -s Vet ikke hvilken alias
+    halt
+
+    ; Catchweight / 1 note
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,10,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,19,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  ; For alias ana.event2 - Championship
+  if ((%c1 == 24) && (%c2 == 24)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,2,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,7,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,14,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  ; For alias ana.event2 - ? - 27.08.2010: Vet ikke hvorfor denne ble ulik...
+  if ((%c1 == 26) && (%c2 == 26)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,8,60)
+    set -s %c.link $gettok(%b,2,34)
+    if (%c.link == flagicon) { 
+      ; Vi har gått for langt i parsinga
+      ; Å returnere knockout blir det samme som å skulle ha returnert flagicon
+
+      return knockout
+    }
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,15,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  ; For alias ana.event2 (two notes)
+  if ((%c1 == 32) && (%c2 == 32)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,2,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,7,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,14,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  ; For alias ana.event2 (two notes)
+  if ((%c1 == 34) && (%c2 == 34)) {
+    ; I denne linja har jeg jo egentlig det jeg trenger (utenom utfallet som ligger tre linjer ned).
+    ; Jeg kan extracte Vektklassen, Fighter1 og WikiLink, Fighter2 og WikiLink.
+
+    echo -s %a
+
+    ; Vektklasse
+    var -s %v $gettok($gettok( [ %a ] ,3,62),1,58)
+
+    ; Fighter 1
+    var -s %b $gettok( [ %a ] ,8,60)
+    set -s %c.link $gettok(%b,2,34)
+
+    ; Fighter 2
+    var -s %d $gettok( [ %a ] ,15,60)
+    set -s %d.link $gettok(%d,2,34)
+
+    var -s %c $gettok( [ %b ] ,-1,62)
+    var -s %d $gettok( [ %d ] ,-1,62)
+
+    ; Vi kunne ha gjort det, men la oss holde oss til den såkalte standaren
+    echo -s Returnerer %v %c %c.link %d %d.link
+    if ($prop == wc) { return %v }
+    if ($prop == 1c) { var -s %r %c | goto 1c }
+    if ($prop == 2c) { var -s %r %d | var %c2.link %d.link | goto 2c }
+  }
+
+  echo -s 4Ukjente %c1 og %c2
+  if (%c1 == 1) { return too low input }
+  halt
+
+  : 14.11.2009
+  ; Dette er eneste stedet (så langt) hvor jeg henter ut %c.link - wikipedialink som knytter nanvet og wiki-sida.
+  ; Denne alisen er called når man sjekker for UFC 105 upcomming matches.
+  ; Jeg vil lagre denne infomasjonen i en datafil, gjerne innunder \data\UFC\database.txt
+
+  if (!$isdir(data)) { mkdir data }
+  if (!$isdir(data\UFC)) { mkdir data\UFC }
+  if (!$isfile(data\UFC\database.txt)) { write -c data\UFC\database.txt }
+
+
+  echo -s prop: $prop
+  if ($prop == wc) { var -s %r $gettok($gettok( [ %a ] ,1,60),-1,62) | return $left(%r,$calc($len(%r)-6)) }
+
+  if ($prop == 1c) { 
+    ; %r er navnet i plaintext (20.08.2010)
+    var -s %c.link $gettok($gettok( [ %a ] ,7,60),2,34)
+    var -s %r $gettok($gettok( [ %a ] ,7,60),-1,62)
+
+    :1c
+    ; Writes into database ["wiki_link" "fighter's name"] @ data\UFC\database.txt
+    var -s %dummy $data(%c.link,%r)
+
+    return %r
+  }
+  if ($prop == 2c) { 
+    var -s %c2.link $gettok($gettok( [ %a ] ,14,60),2,34)
+    var %r $gettok($gettok( [ %a ] ,14,60),-1,62)
+
+    :2c
+    ; Writes into database [wiki_link fighter's name] @ data\UFC\database.txt
+    var -s %dummy $data(%c2.link,%r)
+
+    return %r
+  }
+
+  echo -s 4Feil!
+  halt
+}
+
+alias data {
+  ; v 2.3 - Now accepts ".navn" to make %navn out of wikifile
+  ; v2.2 - Now accepts ".wiki" to take recordfile and find the wikifile
+  ; v2.1 - Now accepts ".txt" to search for the txtfile.
+  ; v2 - Now accepts ".record" to search for the recordfile. Assumes that name is correct and valid.
+  ; My own database
+  ; Normally expects: /wiki/Vitor_Belfort Vitor Belfort
+  ; If those are supplied, and no %read is found, it will write to the database automatically.
+  ; If only $1 is supplied, with no wikilink, we take it for granted that someone wants to search
+
+  var %file data\UFC\database.txt
+
+  if (!$1-) { return null }
+
+  if (($1) && ($2) && (/wiki/ isin $2)) {
+    var -s %1 $1
+    var -s %2 $2
+    var -s %read $read(%file,s,$1)
+    if ($prop == update) { return %read }
+    ; Try to write
+    if ((!%read) && ($2)) { 
+      write %file %1 %2 
+      return written 
+    } 
+    ; Returns if found
+    if (%read) { return true }
+  }
+
+  if ((!$2) && (/wiki/ !isin $1)) {
+    if ($prop == wiki) {
+      echo -s prop = wiki
+      var %a $gettok($1-,-1,92)
+      var %a $replace(%a,_,$chr(32))
+      var %a $gettok(%a,1,46)
+      if (é isin %a) { var -s %s $replace(%a,é,e) }
+
+      var %read $read(%file,w,* $+ %a $+ *)
+      if (%read) { var %wiki $gettok(%read,1,32) | return %wiki } | else { 
+        echo -s Feil i alias data: 1- = $1- - a: %a - read: %read 
+        halt 
+        return error no wiki 
+      }
+    }
+
+    if ($prop == navn) {
+      echo -s prop = navn
+      return $replace($gettok($gettok($1-,1,46),-1,92),_,$chr(32))
+    }
+
+    echo -s alias data: Vil du at vi skal søke basert på navnet? " $+ $1 $+ "
+
+    var %readn 1
+    var %count 0
+
+    :loop
+    var -s %read $read(%file,w,* $+ $1 $+ *, [ %readn ] )
+    var %readn $calc($readn + 1)
+    if (%read) { 
+      if (!%result) { var %result %read } | else { var %result %result $+ ¤ $+ %read }
+      inc %count 
+      goto loop 
+    }
+
+    if (%count > 1) { var -s %x $numtok(%result,164) | var -s %rand $rand(1, [ %x ] ) | var -s %result $gettok( [ %result ] , [ %rand ] , 164) }
+    return %result Found %count match(es)
+    goto end
+  }
+
+  if ((!$2) && (/wiki/ isin $1)) {
+    if ($prop == record) {
+      return data\UFC\cache\ $+ $right($1,$calc($len($1)-6)) $+ .record.txt
+    }
+    if ($prop == txt) {
+      return data\UFC\cache\ $+ $right($1,$calc($len($1)-6)) $+ .txt
+    }
+
+    echo -s Vil du at vi skal søke basert på wiki-linken?
+    echo -s 1: $1
+    var -s %read $read(%file,s,$1)
+    return %read
+    goto end
+  }
+
+  ; Error
+  if ((!%read) && (!$2)) { echo -s Noe er galt. Mangler nr. 2. Format "Wikilink Fullt Navn" | return error }
+  :end
+}
+
+
+alias dialog.settings {
+  ; Sette størrelsen på dialogen 
+  set %max.bredde 500
+  set %max.høyde 300
+  set %dialog.title UFC Rankings $gettok($read($script,1),2,32)
+
+  ; Navnegiving
+
+  ; [id].[pos]  
+  : [type].[id]
+
+  ; Sette standard størrelse på knappene
+  set %knapp.h 9
+  set -s %knapp.b 2.9
+
+  ; Sette størrelse på "list", id 20. Den brukes ganske mye.
+  ; 27.08.2010: Men denne er satt passitvt/manuelt... hm...
+
+  ; 200 2 200 150 (tabben)
+  set -s %list20.1 200
+  set -s %list20.2 0
+  set -s %list20.b 200
+  set -s %list20.h 148
+
+  ; 200 2 200 150 (selve lista)
+  set -s %list21.1 201
+  set -s %list21.2 16
+  set -s %list21.b 198
+  set -s %list21.h 139
+
+
+  ; Sette Exit-knappen
+  set -s %txt.1 Exit
+  var -s %len $len(%txt.1)
+  set -s %knapp.br $round($calc(%len * %knapp.b),0)
+  set -s %pos1.1 $calc(%max.bredde - %knapp.br - 1)
+  set -s %pos1.2 $calc(%max.høyde - %knapp.h - 1)
+
+  ; Sette ReClose-knappen
+  set -s %txt.2 ReClose
+  var -s %len $len(%txt.2)
+  ; Because the len is so small in this button, increase the buttonlength
+  var %knapp.b2 3.5
+  set -s %knapp2.br $round($calc(%len * %knapp.b2),0)
+  set -s %pos2.1 $calc(%max.bredde - %knapp2.br - 1)
+  set -s %pos2.2 1
+
+  ; Sette knapp 15
+  set -s %txt.15 Load fightdata from Wikipedia
+  var -s %len $len(%txt.15)
+  set -s %knapp15.br $round($calc(%len * %knapp.b),0)
+
+  set -s %pos15.1 $calc(40 + 65 + 5)
+  set -s %pos15.2 $calc(2)
+
+  ; Knapp 16 (check events)
+  set -s %txt.16 Check for events
+  var -s %len $len(%txt.16)
+  set -s %knapp16.br $round($calc(%len * %knapp.b),0)
+
+  set -s %pos16.1 $calc(40 + 65 + 5)
+  set -s %pos16.2 $calc(2 + 10)
+
+  ; Dependent av "%list.20" og "figher parsed" (30)
+
+  ; Knapp 42 (gather figter info from Wikipedia) (1)
+  set -s %txt.42 Check fighterinfo
+  var -s %len $len(%txt.42)
+  set -s %knapp42.br $round($calc(%len * %knapp.b),0)
+
+  set -s %pos42.1 $calc(%list20.1 + 40 + 5)
+  set -s %pos42.2 $calc(%list20.2 + %list20.h)
+
+  ; Knapp 43 (gather figter info from Wikipedia) (2)
+  set -s %txt.43 Check fighterinfo
+  var -s %len $len(%txt.43)
+  set -s %knapp43.br $round($calc(%len * %knapp.b),0)
+
+  set -s %pos43.1 $calc(%list20.1 + 40 + 5)
+  set -s %pos43.2 $calc(%list20.2 + %list20.h + %knapp.h + 5)
+}
+
+dialog wiki {
+
+  title %dialog.title
+  size -1 -1 %max.bredde %max.høyde
+  option dbu
+
+  ; Pos.vh pos.h bredde høyde
+  ; 1 = Exit, 2 = Reclose
+  button "",1,%pos1.1 %pos1.2 %knapp.br %knapp.h
+  button "",2,%pos2.1 %pos2.2 %knapp2.br %knapp.h
+
+  text "Select Fighter:",10,1 4 40 10
+  combo 11,40 2 67 10,edit drop
+
+  text "Fighers loaded:",12,1 20 40 10
+  text "0000",13,42 20 30 10
+
+  button "",15,%pos15.1 %pos15.2 %knapp15.br %knapp.h
+  button "",16,%pos16.1 %pos16.2 %knapp16.br %knapp.h
+
+  edit "",17,$calc(%pos16.1 + %knapp16.br + 5) %pos16.2 20 10
+
+  tab "Main",18,%list20.1 %list20.2 %list20.b %list20.h
+  tab "Events",19
+  tab "Fights",25
+  tab "Debug",26
+
+  ; Den store lista
+  list 20,%list21.1 %list21.2 %list21.b %list21.h,tab 18
+  list 21,%list21.1 %list21.2 %list21.b %list21.h,tab 19
+  list 22,%list21.1 %list21.2 %list21.b %list21.h,tab 25
+  list 23,%list21.1 %list21.2 %list21.b %list21.h,tab 26
+
+  ; Design error
+  ; Text, button, text - wrong. Text, text, button would be correct.
+
+  text "Fighter parsed:",40,%list20.1 $calc(%list20.2 + 2 + %list20.h) 40 9
+  text "Fighter parsed:",41,%list20.1 $calc(%list20.2 + 15 + %list20.h) 40 9
+
+  text "",44,$calc(%list20.1 + 50) $calc(%list20.2 + 2 + %list20.h) 80 9
+  text "",45,$calc(%list20.1 + 50) $calc(%list20.2 + 15 + %list20.h) 80 9
+
+  button "",42,$calc(%list20.1 + %list20.b - %knapp42.br) $calc(%list20.2 + 2 + %list20.h) %knapp42.br %knapp.h
+  button "",43,$calc(%list20.1 + %list20.b - %knapp43.br) $calc(%list20.2 + 15 + %list20.h) %knapp43.br %knapp.h
+
+
+  box "Stats",30,10 100 120 100
+  text "Fights:",31,13 107 16 10
+  text "000",32,30 107 10 10,center
+  text "Wins:",33,42 107 14 10
+  text "000",34,56 107 10 10,center
+  text "Loss:",35,68 107 12 10
+  text "000",36,81 107 10 10,center
+  text "%:",37,92 107 8 10
+  text "100%",38,100 107 20 10,center
+}
+
+on 1:dialog:wiki:init:0:{
+  ; Write new vars
+  dialog.settings
+
+  ; Load from our database
+
+  var -s %f data\UFC\database.txt
+  var -s %x $lines(%f) | inc %x
+
+  var %a 1
+  while (%a != %x) { did -a $dname 11 $gettok($read(%f, [ %a ] ),2-,32) | inc %a }
+
+  dec %x
+
+  timer 1 0 { did -a $dname 13 %x }
+
+
+  ; Adds a dummy line and select the first line by default
+  did -i $dname 11 1 $chr(32)
+  did -c $dname 11 1
+  did -b $dname 15
+
+  ; Sette inn tekst (gjerne buttons, virker det som? 14.11.2009)
+  did -a $dname 1 %txt.1
+  did -a $dname 2 %txt.2
+  did -a $dname 15 %txt.15
+  did -a $dname 16 %txt.16
+  did -a $dname 42 %txt.42
+  did -a $dname 43 %txt.43
+
+  var -s %sjekk $gettok($read(%f),2-,32)
+  if (!%sjekk) { echo -s feil, evig loop? | halt }
+
+  echo -s readn: $readn | halt
+
+  did -a $dname 44 $gettok($read(%f),2-,32)
+  while ($readn == 1) { did -a $dname 44 $gettok($read(%f),2-,32) }
+
+  did -a $dname 45 $gettok($read(%f),2-,32)
+  while ($readn == 1) { did -a $dname 45 $gettok($read(%f),2-,32) }
+
+}
+
+on 1:dialog:wiki:sclick:*:{
+
+  ; ReClose
+  if ($did == 2) { dialog.settings | dialog -x wiki | dialog -mdo wiki wiki }
+
+  ; Selecting fighter
+  if ($did == 11) {
+    echo -s 11: $did(11)
+    if ($did(11).text) { did -e $dname 15 } | else { did -b $dname 15 }
+  }
+
+  ; Gather data...
+  if ($did == 15) { 
+    did -b $dname 15,16 
+    if ($did(11).text) { wiki $did(11).text } | else { wiki }
+  }
+
+  ; Gather events...
+  if ($did == 16) { 
+    did -b $dname 15,16,17 
+    if ($did(17)) { wiki $did(17) } | else { wiki events }
+  }
+
+  if (($did == 20) || ($did == 21) || ($did == 22)) { echo -s parsing: $did($did).seltext | echo -s >> $parse($did($did).seltext) }
+
+  if ($did == 42) { 
+    var -s %f data\ufc\database.txt
+    set -s %wiki.url $gettok($read(%f,w,* $+ $did(44) $+ *),1,32) 
+    wiki %wiki.url
+  }
+  if ($did == 43) { 
+    var -s %f data\ufc\database.txt
+    set -s %wiki.url $gettok($read(%f,w,* $+ $did(45) $+ *),1,32) 
+    wiki %wiki.url
+  }
+}
+
+on 1:dialog:wiki:edit:*:{
+  if ($did == 17) {
+    ; -e = Enable, -b = disable. 16 = Check-button
+    if ($did(17) == $chr(32)) { echo -s Kun et mellomrom | did -e $dname 16 | did -ra wiki 16 Check for events | return }
+    if (!$did(17) == $chr(32)) { did -e $dname 16 | did -ra wiki 16 Check for events | return }
+    if (!$did(17)) { echo -s Tom, enable | did -e $dname 16 | did -ra wiki 16 Check for events | return }
+    if ($did(17) !isnum) { echo -s Ikke et tall, disable | did -b $dname 16 | did -ra wiki 16 Check for events | return }
+    ; echo -s enabler...
+    did -e $dname 16 | did -ra wiki 16 Check for event:
+  }
+}
+
+alias parse {
+  ; Parsing from slick, list 20, and parse out the two fighters, and set them in textboxes
+  ; Or, if a check for upcomming events was made, parse out the UFC number (UFC 118, not the other number),
+  ; thus making it easier for the user to make further gathering.
+  ; This will trigger any of the lists used (depending of who triggers this alias)
+
+  var -s %a $1-
+  var %b $gettok(%a,1,32)
+  var %c $left(%b,1)
+  var %d $right(%b,1)
+  if (%c isnum) { echo -s Ok, det er et tall } | else { 
+    echo -s Ikke et tall, feil 
+    echo -s Hva om vi prøver på det andre?
+    if (($left(%a,3) == Nr.) && ($gettok(%a,5,32) isnum)) {
+      did -ra wiki 17 $gettok(%a,5,32)
+      did -e wiki 16
+      did -ra wiki 16 Check for event:
+    } | else { did -r wiki 17 | did -ra wiki 16 Check for events }
+    halt
+  }
+
+  if (%d == :) { echo -s Ok, det er et kolon } | else { echo -s Ikke et kolon, feil | halt }
+
+  ; Kult, da vet vi at vi kan parse noe...
+  ; Vi vet at vi bruker ordet "mot". Dette er egen-laga dingsegreie. Endres den, ødelegges det her.
+  ; Hvor finner vi det ordet?
+
+  var -s %x $numtok(%a,32)
+  var -s %nr 2
+
+  while ($gettok(%a, [ %nr ] ,32) != mot) { echo -s Fant ikke ordet "mot" så langt, ord nummer %nr | inc %nr } 
+  echo -s Fant "mot" i ord nummer %nr
+  var %del1 %nr
+
+  while ($gettok(%a, [ %nr ] ,32) != i) { echo -s Fant ikke ordet "i" så langt, ord nummer %nr | inc %nr } 
+  echo -s Fant "i" i ord nummer %nr
+  var %del2 %nr
+
+  echo -s Nice, da vet vi at vi skal parse fra 2 til $calc(%del1 - 1) og fra $calc(%del1 + 1) til $calc(%del2 - 1)
+
+  var -s %fighter1 $gettok(%a,2- $+ $calc(%del1 - 1),32)
+  var -s %fighter2 $gettok(%a,$calc(%del1 + 1) $+ - $+ $calc(%del2 - 1),32)
+
+  did -a wiki 44 %fighter1
+  did -a wiki 45 %fighter2
+
+  return done parsing
+}
+
+
+alias dialog.wiki { dialog -mdo wiki wiki }
+
+menu status,channel {
+  UFC Rankings:{ if ($dialog(wiki)) { dialog -v wiki wiki | return } | else { dialog.settings | dialog -mdo wiki wiki }
+  }
+}
+
+alias pic {
+  var %t $ticks
+  var %win @UFC
+  if (@window(%win)) { window -c %win }
+
+
+  ; Gathering the fighterdata
+  var %file data\ufc\database.txt
+  var %x.f $lines(%file)
+  var %f $read(%file,$rand(1,%x.f))
+  var %f.wiki $gettok(%f,1,32)
+  var %f $gettok(%f,2-,32)
+
+  set -s %r.file $data(%f.wiki).record
+  var -s %r $isfile(%r.file)
+  if (%r) { 
+    ; If recordfile
+    ; drawtext %win 3 95 76 %r
+    var -s %record.raw $read(%r.file,$lines(%r.file))
+    if ($numtok(%record.raw,164) > 2) { 
+      ; If matchline (several ¤)
+      var -s %record $gettok(%record.raw,2,164))
+      ; Ferdigberegnet (per dags dato, 7.1.11, så finnes det ingen som er ferdigberegnet)
+      var %color $iif($numtok(%record.raw,164) >= 9,3,4)
+      if (%color == 3) { var -s %ferdig $true } | else { var -s %ferdig $false }
+
+    }
+    else {
+      ; If recordfile, but not matches
+      ; drawtext %win 1 0 87 Record: %record
+      goto end
+    }
+    ; Failsafe
+    ; drawtext %win 1 0 87 Record: %record
+
+  } 
+  else { 
+    :end
+    ; No recordfile, loops 'till we got one
+    if (!$window(@UFC.que)) { window -hl @UFC.que }
+    if ($fline(@ufc.que,%f.wiki,0) <= 0) { aline @UFC.que %f.wiki } | else { echo -s @ufc.que: %f.wiki finnes i @ufc.que }
+    ; drawtext %win 4 95 76 %r 
+    timer 1 0 { pic } 
+    return
+  }
+
+
+
+  ; Starting to create the window
+  var %w 1510
+  var %h 900
+
+  window -pdCor %win 0 0 %w %h
+
+  ; Setting av variabler
+  var -s %wx $window(%win).dw
+  var -s %w $round($calc(%wx / 2),0)
+
+  var -s %hx $window(%win).dh
+  var -s %h $round($calc(%hx / 2),0)
+
+  ; Assume %dialog.title exists...
+  drawtext %win 1 $calc(%w - $calc($calc($len(%dialog.title) * 8)) /2) 0 %dialog.title
+
+  ; Write infobar at the left
+  drawtext %win 1 0 10 WxH: $window(%win).dw $+ x $+ $window(%win).dh ( $+ $window(%win).w $+ x $+ $window(%win).h $+ )
+  drawtext %win 1 0 21 Midtpunktet er: %w %h
+  drawtext %win 1 0 32 Muspos er: ? ?
+  drawtext %win 1 0 43 Antall fighters: %x.f
+  drawtext %win 1 0 54 Fighter loaded: %f
+  drawtext %win 1 0 65 Fighter wiki: %f.wiki
+  drawtext %win 1 0 76 Recordfile: 
+  drawtext %win 1 0 87 Record: %record
+  drawtext %win 3 95 76 %r
+  drawtext %win 1 0 98 Ferdigberegnet: %ferdig
+
+
+  ; Loop to get the fighterdata from the recordfile
+  var %a 0
+  var %x $lines(%r.file)
+  var %lstart 139
+  ; 11 space is hardcoded
+
+  var -s %mark
+
+  :loop
+  inc %a
+  inc %lstart 11
+  if (%a > %x) { goto c }
+
+  var %line $read(%r.file,%a)
+  var %numtok $numtok(%line,164)
+  ; 9 er riktig
+  var %color $iif($numtok(%line,164) >= 9,3,4)
+  drawtext %win %color 0 %lstart Linje %a $+ : %line
+  if (%color == 3) {
+    echo -s Match funnet
+    var -s %mark mark
+    var -s %pts $gettok(%line,9,164)
+    if (error.end isin %pts) { echo -s Filen burde bli slettet! | halt }
+    if (!%pts.save) { var -s %pts.save $gettok(%pts,1,32) $+ > $+ $gettok(%pts,3,32) | var -s %pts.rec $gettok(%pts,3,32) } | else { 
+      var -s %pts.save %pts.save $+ > $+ $gettok(%pts,3,32) 
+      if ($gettok(%pts,3,32) > %pts.rec) { var -s %pts.rec $gettok(%pts,3,32) }
+    } 
+    } | else { 
+    if (!$window(@UFC.que)) { window -hl @UFC.que }
+    ; Finne ut wikilinken fra %line
+    echo -s line: %line
+    var -s %wikilink $gettok($gettok(%line,3,164),1,32)
+    if (!%wikilink) { echo -s Noe er veldig galt :( Cain Val, kanskje? Ufullstendig wikifile? Unparsed, how? | return }
+    if ((%wikilink == no_link) && (!%mark)) { 
+      echo -s 4Kampen burde ha hatt en score! 
+
+      if ($fline(@ufc.que,* $+ %r.file,0) <= 0) { timer 1 2 { aline @ufc.que ana.calc %r.file } }
+      timerReAnacalc 1 0 { ana.calc %r.file }
+      return reanacalc
+
+      ; Setter loop her for å unngå "finnes i @" rett under her
+      goto loop 
+    }
+
+    echo -s Kamp for %wikilink er ikke utregna
+    var -s %exists $exists(%wikilink)
+    if (!%exists) { 
+      if ($fline(@ufc.que,%wikilink,0) <= 0) { aline @UFC.que %wikilink } | else { echo -s @ufc.que: %wikilink finnes i @ufc.que } 
+    } | else { echo -s Da har vi spart oss for unødig alineing | halt }
+  }
+  goto loop
+
+
+  :c
+
+  ; Drawing the box with fightername
+
+  ; v2 with dynamic width
+  var %wide 10
+  var %len $len(%f)
+  var %offset $calc(%len * 8)
+  var %pos $round($calc(%w - $calc(%offset / 2)),0)
+  drawtext %win 2 %pos $round($calc(%hx * 0.15),0) %f
+  drawrect %win 4 2 $calc(%pos - %wide) $round($calc(%hx * 0.15),0) $calc(%offset + %wide + %wide)) 15
+
+  ; Testing
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.1),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.1),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.2),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.2),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.3),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.3),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.4),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.4),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.5),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.5),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.6),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.6),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.7),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.7),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.8),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.8),0)
+  drawline %win 1 1 $round($calc(%wx * 0.9),0) $round($calc(%hx * 0.9),0) $round($calc(%wx * 0.95),0) $round($calc(%hx * 0.9),0)
+
+  ; Midten, lodrett
+  ; drawline %win 3 1 $round($calc(%wx * 0.5),0) $round($calc(%hx * 0.0),0) $round($calc(%wx * 0.5),0) $round($calc(%hx * 1),0)
+
+  ; Midten, vannrett
+  ; drawline %win 3 1 $round($calc(%wx * 0.0),0) $round($calc(%hx * 0.5),0) $round($calc(%wx * 1),0) $round($calc(%hx * 0.5),0)
+
+  ; Pointsgraph
+  var -s %p.x $round($calc(%wx * 0.02),0)
+  var -s %p.y $round($calc(%hx * 0.7),0) 
+  var -s %p.len $round($calc(%wx * 0.47),0)
+  var -s %p.h $round($calc(%hx * 0.28),0)
+
+  drawrect %win 2 1 %p.x %p.y %p.len %p.h
+  var %b.pos $round($calc(%wx * 0.02),0)
+
+  var %pos $calc($round($calc(%wx * 0.02),0) + $round($calc($calc(%wx * 0.47) / 2),0))
+  drawtext %win 1 %pos $calc($round($calc(%hx * 0.7),0) + 1) Pointsgraph ( $+ %pts.save $+ )
+  drawtext %win 1 %pos $calc($round($calc(%hx * 0.7),0) - 15) Max ( $+ %pts.rec $+ )
+
+  echo -s debug: %pts.save
+
+  ; Drawing the lines...
+  ; Finding the x-coordinates
+
+  var -s %pts.x $numtok(%pts.save,62)
+  var -s %pts.lengths $round($calc(%p.len / $calc(%pts.x - 1)),0)
+
+  var %a
+  :loop2
+  inc %a
+  if (%a > %pts.x) { goto end2 }
+  var -s %p.x [ $+ [ %a ] ] $calc(%p.x + $calc(%pts.lengths * %a) - %pts.lengths)
+  goto loop2
+
+  :end2
+
+  var %a 0
+  :loop3
+  inc %a
+  if (%a > %pts.x) { goto end3 }
+
+  ; Finding the y-coordinates
+
+  var -s %pts $gettok(%pts.save,%a,62)
+
+  var -s %h $calc(%pts / %pts.rec)
+  var -s %h.off $round($calc(%p.h * %h),0)
+
+  var -s %p.y [ $+ [ %a ] ] $calc(%p.y + %p.h - %h.off)
+
+  goto loop3
+
+  ; Old code
+  ; drawline %win 2 1 %p.x $calc(%p.y + %p.h - %h.off) $calc(%p.x + %pts.lengths) $rand(%p.y,%hx)
+  ;
+  ; ; New
+  ;  drawline %win 3 1 %p.xb %p.yb %p.x [ $+ [ %a ] ] %p.y [ $+ [ %a ] ] 
+  ;
+  ;  goto loop3
+  ;
+
+  :end3
+
+  ; Ny drawing routine
+
+  var %a 0
+  :loop4
+  inc %a
+  if (%a > %pts.x) { goto end4 }
+
+  var -s %b $calc(%a + 1)
+
+  drawline %win 4 1 %p.x [ $+ [ %a ] ] %p.y [ $+ [ %a ] ] %p.x [ $+ [ %b ] ] %p.y [ $+ [ %b ] ]
+  goto loop4
+
+
+
+  :end4
+  var %txt Time used: $calc($ticks - %t)
+  var -s %len $len(%txt)
+  drawtext %win 1 $calc(%wx - $calc($len(%txt) * 8)) 0 %txt
+  timer 1 0 { window -a @ufc }
+}
+
+alias mouseupd {
+  drawrect -f @ufc 0 10 80 34 90 11
+  drawtext @ufc 1 85 32 $mouse.x $mouse.y
+}
+
+menu @ufc {
+  mouse:mouseupd
+  sclick:/echo single click at $mouse.x $mouse.y
+  ; dclick:/echo double click at $mouse.x $mouse.y
+  ; uclick:/echo mouse released at $mouse.x $mouse.y
+  ; rclick:/echo single right-click at $mouse.x $mouse.y in $active $1
+  lbclick:/echo mouse selected $active $1
+  ; leave:/echo mouse left $leftwin $leftwinwid
+  ; drop:/echo drag and drop at $mouse.x $mouse.y
+
+}
+
+menu @ufc,status,channel {
+  Redraw:/pic
+  Open Recordfile( $+ %r.file $+ ):{ window -u @ufc | run %r.file }
+  Ontop On:window -o @ufc
+  Ontop Off:window -u @ufc
+}
+
+menu @ufc.que {
+  Calculate this fighter:{ var -s %a $sline(@ufc.que,1) | if (ana.calc isin %a) { dline @ufc.que $sline(@ufc.que,1).ln  | ana.calc $gettok(%a,2-,32) } | else { dline @ufc.que $sline(@ufc.que,1).ln  | window -c @record | wiki %a } }
+  -
+  Remove line: { dline @ufc.que $sline(@ufc.que,1).ln }
+}
