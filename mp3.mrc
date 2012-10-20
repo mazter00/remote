@@ -1,4 +1,4 @@
-; MP3system v0.127
+; MP3system v0.130
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,6 +25,9 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
+; v0.130 22.05.2011 The initial insertion in @mp3eq6, should give 0 points. Making alias eqcheck3/@mp3.result give less penality after the first div is loaded.
+; v0.129 21.05.2011 alias ta.vekk should cope with commas now.
+; v0.128 12.05.2011 Now deletes missing (non-existant) files in mp3.eq for @MP3.provided.
 ; v0.127 23.03.2008 Påske-edition: alias mp3.equal changed from skip% to play%. Unplayed mp3s doesn't have that all of a fordel now :)
 ; v0.126 21.03.2008 Påske-edition! alias checkfile created. Will check the files in $1 (data\hitfile.txt) for existency.
 ; v0.125 16.03.2008 If komma found in %raw.pick in alias mp3.equal, it will take the next line (hardcoded).
@@ -125,7 +128,7 @@ alias mp3play {
   if (%e) { unset %e }
 
   if ($inmp3.fname) { ta.vekk $inmp3.fname | unset %mp3.delete }
-  if (%mp3.delete) { ta.vekk $noqt(%mp3.delete) }
+  if (%mp3.delete) { ta.vekk $noqt(%mp3.delete) | unset %mp3.delete }
 
   if ($1) {
     if ($prop == play) { var %b $1- | var %a $remove($1-,") | goto inmp3 }
@@ -471,6 +474,15 @@ alias mp3play {
 
       var -s %a %now.a
       var -s %b " $+ %now.a $+ "
+
+      if (!$exists(%a)) { 
+        echo -s %a finnes ikke, slette direkte 
+        mp3.delete %a 
+        dline @mp3.result 1
+        ta.vekk %a
+        timer 1 10 { mp3play }
+        halt
+      }
     }
 
     ; Noen som bruker ec2? 7.7.04
@@ -557,7 +569,9 @@ alias mp3play {
     :finnes
     splay -p stop
     .timerTryAgain -m 1 1 { mp3play } | halt
-  }
+  } 
+
+  if (!$exists(%a)) { echo -s MP3en finnes ikke | halt }
 
   ; checkmp3 is used to find if the MP3 is REALLY being played, since mIRC doesn't have an internal erromsg for that
   .timermp3check -m 1 500 { checkmp3 %a }
@@ -1309,34 +1323,41 @@ alias mp3.equal {
   if ($1-) { 
     if (!$window(@MP3.provided)) { window -h @MP3.provided }
     var -s %f $fline(@mp3.provided,*¤*random*,0)
-    if (%f == 0) { aline @MP3.provided $1- ¤ random } | else { echo -s Er allerede %f random mp3 i @mp3.provided }
+    if (%f == 0) { aline @MP3.provided $1- ¤ random fra mp3play } | else { echo -s Er allerede %f random mp3 i @mp3.provided }
   }
 
   ; This mp3 is the lowest in the previously calculated div. Has been set as global var earlier on. When the div was calulated, I'd guess (11.02.2008)
   ; TODO - Kanskje også finne "highest [div]"? (17.03.2008)
   if (%lowest2) { 
-    if ($fline(@mp3.provided, * $+ %lowest2 $+ *) >= 1) { echo -s %lowest2 finnes allerede i @mp3.provided } 
+    if ($fline(@mp3.provided, * $+ %lowest2 $+ *) >= 1) { echo -s %lowest2 finnes allerede i @mp3.provided (lowest) } 
     else { aline @MP3.provided %lowest2 ¤ lowest.div %lowest.div }
   }
 
   ; This 3 (number selected under (%rtfx)) mp3(s) is taken randomly from a random div
   ; In case of an import that contains divs, which probably contains non-existans mp3s on this (new) system
-  var %rf 0
-  var %rfx 0
 
+  var %rfx 1
+
+  var %rf 0
+
+  ; Changed to pick random mp3 from div 1
+  ; Was used to pick from... I don't know (12.05.2011)
   :r.file
   inc %rf
   if (%rf <= %rfx) {
-    var %r.div $rand(1,$low.div)
+    var %r.div 1
     var %r.div.file $read(data\div\div $+ %r.div $+ .txt)
     if (!%r.div.file) { echo -s Failed to find a random file from %r.div.file $+ , looping | dec %rf | goto r.file }
-    aline @MP3.provided %r.div.file
+    ; Don't check for validity
+    if ($fline(@MP3.provided,*Random from*,0) <= %rtx) { aline @MP3.provided %r.div.file ¤ Random from Best div | echo -s mp3.equal: Insert a mp3 from div 1 (random) to @MP3.provided }
     goto r.file
   }
 
   ; Finding the oldest skipped mp3, and the oldest played mp3
 
+  echo -s Finding oldest  
   var %find.oldest $find.oldest
+  echo -s Done finding oldest...
 
   :continue
 
@@ -1344,9 +1365,7 @@ alias mp3.equal {
 
   ; Vi vil ha tournaments-mp3er inn her, i Provided.
 
-  if ($line(@MP3.provided,0) < $mp3.x) { tp2 } | else {
-    echo -s Det er allerede nok filer i @mp3.provided 
-  }
+  if ($line(@MP3.provided,0) < $mp3.x) { tp2 } | else { echo -s Det er allerede nok filer i @mp3.provided }
 
   echo -s Det er $line(@MP3.provided,0) filer i @MP3.provided
 
@@ -1357,7 +1376,7 @@ alias mp3.equal {
 
   ; Hvor mange filer som skal sjekkes
   var %eq $mp3.x
-  if (!%eq) { echo -s Variable 'eq' is null | var %eq 39 }
+  if (!%eq) { echo -s Variable 'eq' is null | var %eq 39 | halt }
 
   ; Må starte på x siden vi allerede har en eller flere fil(er) i @mp3.provided
   var %tempc $line(@MP3.provided,0)
@@ -1406,7 +1425,8 @@ alias mp3.equal {
     invalid.fname %1read
     echo -s invalid: %invalid
 
-    if (!$exists( [ %1read ] )) { echo -s FINNES IKKE! SLETT FØR NOEN FINNER UT AV DET! - %1read - %read.m }
+    ; Se om det er her..
+    if (!$exists( [ %1read ] )) { mp3.delete %1read | dline @mp3.provided %a.p | dec %a.p }
 
     var -s %read.m $gettok($gettok( [ %read ] ,2,164),1-,32)
 
@@ -1424,11 +1444,18 @@ alias mp3.equal {
   var %file data\mp3.txt
   :read
   var %line $rand(1,$lines( [ %file ] ))
+  echo -s read %file %line
   var -s %a $read( [ %file ] , [ %line ] ) 
-  if (!%a) { goto read }
+  if (!%a) { halt | goto read }
 
   ; This is the first occourence, and it would be logical to check if this is a valid hit.
-  if (!$exists(%a)) { echo -s 4filnavnet %a finnes ikke | goto read }
+  if (!$exists(%a)) { 
+    echo -s 4filnavnet %a finnes ikke 
+
+    mp3.delete %1read
+
+    goto read 
+  }
 
   echo -s Sjekker for invalid... ( %invalid )
   unset -s %invalid
@@ -1494,26 +1521,33 @@ alias mp3.equal {
     goto eq.loop
   }
 
-  ; Aliner prosent played (changed 23.03.2008)
+  ; Aliner prosent *played* (changed 23.03.2008)
   var -s %p $mp3.played(%a)
-  if (!%p) { var %skip 0 | goto len }
+  if (!%p) { var %play 0000 | goto len }
   var -s %t $mp3.tried(%a)
-  if (%p == %t) { echo -s 100% skip ( %t ) | var %skip 0 | goto len }
+  if (%p == %t) { echo -s 100% play ( %t ) | var %play 100 | goto len }
 
   echo -s Grunnlag for prosentregning
   var -s %pro $calc(%p / %t)
-  if (%pro == 0) { var %skip 0 | goto len }
+
+  if (%pro == 0) { var %play 100 | goto len }
 
   var -s %pro $calc(1 - %pro)
-  var -s %skip $calc(%pro * 100)
+  var -s %play $calc(%pro * 100)
 
   :len
-  if ($len(%skip) == 1) { var %skip 00 $+ %skip }
-  if ($len(%skip) == 2) { var %skip 0 $+ %skip }
-  ; if ($len(%skip) == 3) { var %skip 0 $+ %skip }
+  if ($len(%play) == 1) { var %skip 00 $+ %play }
+  if ($len(%play) == 2) { var %skip 0 $+ %play }
 
-  aline @mp3eq3 %skip %a
-  echo -s sjekk %skip og %a og $mp3.played(%a) og $mp3.tried(%a)
+  if (%play > 0) {  
+    echo -s Sjekk i.num: %play
+    ; Unfortinalely, $i.num makes this four number padded :/ [21.05.2011]
+    var -s %play $i.num(%play)
+    if ($len(%play) != 4) { echo -s Sjekk play - %play }
+  }
+
+  aline @mp3eq3 %play %a
+  echo -s sjekk %play og %a og $mp3.played(%a) og $mp3.tried(%a)
 
 
   ; Legger til aktuelle ratings i @mp3eq4
@@ -1544,7 +1578,7 @@ alias mp3.equal {
 
   unset %pts,%r
 
-  var -s %tell $line(@mp3eq5,0)
+  var %tell $line(@mp3eq5,0)
 
   var %u $underlined.fname(%a)
   var -s %r $read(data\mp3.rate2.txt,s, [ %u ] )
@@ -1558,47 +1592,65 @@ alias mp3.equal {
     } | else { aline @mp3eq5 $i.num(%pts) %a }
   } | else { aline @mp3eq5 $i.num(0) %a }
 
-  var -s %tell2 $line(@mp3eq5,0)
+  var %tell2 $line(@mp3eq5,0)
   if (%tell == %tell2) { echo -s Ingen lagt til?! | halt }
 
   ; Legger til aktuelle rankings i @mp3eq6
+  unset %status
 
-  var %div $find.div($remove(%a,"))
+  var -s %div $find.div($remove(%a,"))
   if (%div !isnum) { 
     ; Div fantes ikke ( %div )
-    ; TODO - finne div'en med FLEST linjer istedenfor, fordi, når det lages nye divisjoner, så vil linjenummeret der være vesentlig lavere, 
-    ; noe som fører til at laveste div får "halvt" poeng. Noe som fører til at de før økt sjanse for å bli spilt, 
-    ; så jeg vet ikke om jeg skal lage det eller ikke... 11.21.2005
 
-    var %div $low.div
-    ; If the mp3 is unranked, take the lowest div and find the maximum number of lines and presume (assume) the rank is that
-    ; If a div was just created, it will contain fewer files than other divs...
-    ; echo -s Finne div av lines av div (div: %div $+ )
-    var %rank $lines(data\div\div $+ %div $+ .txt) 
+    ; 21.05.2011: After much back and forth, give the minimum value (1) because that will increase the div to be loaded.
+    var -s %low $low.div2
+    var %div $gettok( [ %low ] ,1,32)
+    var -s %lowrank $gettok( [ %low ] ,2,32)
 
-    ; TESTING
-    var %rank 000
+    var %txt find.div returnerte ikketall, vi setter ranken til %lowrank (maxlinjer i lowdiv2, som er %div - som er den div'en som denne mp3en
+    var %txt2 sannsynligvis vil bli tildelt rett etterpå.
+    echo -s %txt %txt2
 
+    if (%lowrank > 0) { var -s %rank %lowrank | var %status no-div } | else { var -s %rank 1 | var %status new-div }
     } | else {
-    var %rank = $gettok($strip($showdiv2( $find.div($remove(%a,")) , @div3- $+ %div , $nopath($remove(%a,"))).return),2,32)
+    echo -s rank ifra showdiv2
+    var -s %rank = $gettok($strip($showdiv2( $find.div($remove(%a,")) , @div3- $+ %div , $nopath($remove(%a,"))).return),2,32)
     if (%rank == av) { 
       ; rank er av - finne fra max antall linjer i %div 
-      ; alias showdiv2 er brukt, men vil returnere "rank = av" hvis vinduet ikke er loadet. Vil ikke loade det, siden det vil gjort det før eller senere
-      var %rank $lines(data\div\div $+ %div $+ .txt) 
-      ; TESTING
-      var %rank 000
-    }
-  }
+      ; alias showdiv2 er brukt, men vil returnere "rank = av" hvis vinduet ikke er loadet. Vil ikke loade det nå, siden det vil bli gjort det før eller senere
+      ; temp variabel
+      var -s %wbu @div3- $+ %div
+      if ($window(%wbu)) { 
+        echo -s vindu %wbu finnes, setter rank til noe høyt 
+        if ($line(%wbu,0) == 0) { 
+          echo -s Drit i å sette høyt når det ikke er noe innhold i vindu %wbu !!!
+          var -s %rank 1
+          var %status unloaded
+        }
+        echo -s Setter max poengsum. Vinduet er loadet, det er innhold i vinduet, derfor sette max sånn at rekalk kan rette opp poengsummen senere.      
+        var -s %rank $lines(data\div\div1.txt) 
+        var %status max
+        } | else { 
+        echo -s Hvorfor ønsker vi rank 1 her, rank: %rank (vindu fantes ikke?) 
+        echo -s Vil heller lese direkte fra div-fila for å finne ranken. Vinduet er ikke loadet, vil bli loadet senere...
+        var -s %div.file data\div\divw- $+ %div $+ .txt
+        var -s %read $read(%div.file,w,* $+ $nopath($remove(%a,")) $+ *)
+        if (!%read) { var %rank 1 } | else { var -s %rank $readn }
+      }
+    } | else { echo -s Hvorfor ønsker vi rank 2 her, rank: %rank (rank fantes) }
+  } | else { echo -s Hvorfor ønsker vi rank 3 her, rank: %rank | halt | var %rank 3 }
+
 
   ; Debugging
-  ; if (%rank > 2482) { echo -s rank er %rank | halt }
+  if (%rank > 600) { echo -s rank er %rank | halt }
+  ; 17.05.2011: Tror kanskje jeg vet, de blir loada oppå hverandre, og blir flere, så nye mp3er faller helt nede, kopi på kopi og får dermed en veldig høy rank.
 
   if ($len(%rank) == 4) { var %rank 0 $+ %rank }
   if ($len(%rank) == 3) { var %rank 00 $+ %rank }
   if ($len(%rank) == 2) { var %rank 000 $+ %rank }
   if ($len(%rank) == 1) { var %rank 0000 $+ %rank }
 
-  aline @mp3eq6 %rank %a
+  aline @mp3eq6 %rank ? $+ / $+ $lines(data\div\div $+ %div $+ .txt) %div %status %a | unset %status
 
   ; Div 1 får større presedens enn div 2 osv
 
@@ -1676,6 +1728,12 @@ alias mp3.equal {
   var -s %rank $fline(@mp3rank,* $+ %a ,1)
   if (!%rank) { aline @mp3eq9 $i.num(0) %a | goto eq.loop }
 
+  var -s %max $line(@mp3rank,$line(@mp3rank,0))
+  ; Gjetter på at det er underlined.fname...
+
+  echo -s rank: %rank
+  var -s %current $line(@mp3rank, [ %rank ] )
+  echo -s halted | halt
   halt
 
   goto eq.loop
@@ -2018,12 +2076,15 @@ alias update.rate {
 }
 
 alias ta.vekk {
-  var %b $1-
+  echo -s alias ta.vekk: $1-
+  var -s %b $1-
+  if (!$1-) { return null input }
+  if ($chr(44) isin %b) { var -s %b $replace(%b,$chr(44),$chr(42)) }
 
-  var %w @mp3eq,@mp3eq2,@mp3eq3,@mp3eq4,@mp3eq5,@mp3eq6,@mp3eq7,@mp3eq8,@mp3eq9,@mp3.provided,@mp3.result
+  var %w @mp3eq,@mp3eq2,@mp3eq3,@mp3eq4,@mp3eq5,@mp3eq6,@mp3eq7,@mp3eq8,@mp3eq9,@mp3.provided,@mp3.result,@MP3.endr
   var %a 0
-  ; 11 vinduer
-  var %x 11
+  ; 12 vinduer
+  var %x 12
 
   :loop
   inc %a
@@ -2035,14 +2096,12 @@ alias ta.vekk {
   var -s %line $fline( [ %wi ] , * $+ %b $+ *,1)
   var -s %innhold $line( [ %wi ] , [ %line ] )
 
-  echo -s max-verdien er: %max.v. [ $+ [ %a ] ]
-
   if (%fline) { 
     echo -s Funnet i linje %line i vindu %wi og er tatt vekk 
     dline %wi %line
     if (%fline > 1) { echo -s Vi fant flere treff, looper | goto l2 }
     } | else {
-    echo -s Ikke funnet i vindu %wi 4:(
+    echo -s %b ikke funnet i vindu %wi 4:(
   }
 
   goto loop 
