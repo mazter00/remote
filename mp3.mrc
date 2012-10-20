@@ -1,4 +1,4 @@
-; MP3system v0.106
+; MP3system v0.107
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,6 +25,7 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
+; v0.017 07.08.2006 In alias find.oldest, now checks against data\mp3.unable.txt before adding it to the buffer window
 ; v0.106 02.04.2006 Fix a bug in alias find.oldest, will now delete if the oldest entry is invalid (nonexistent). Will echo for how long the line was there.
 ; v0.105 21.10.2005 Alias mp3.equal: Now assigns an un-div'ed mp3 automatically, so the div for the mp3 will be used in the calculation
 ; v0.104 01.10.2005 Changed behavior in alias mp3.equal. Still takes the oldest entry in mp3skip, but now takes a random line from mp3hit. This is due to calculations made in @mp3.eq4
@@ -137,7 +138,10 @@ alias mp3play {
   var %inmp3 $inmp3.fname
   if (%inmp3) { 
 
-    ; What does this alias (/mp3.inmp3) do?
+    ; Sets the random file to skipped, so eqcheck3 (or something) will find a better random mp3 next time.
+    set -s %mp3.eq3.r skipped
+
+    ; What does alias (/mp3.inmp3) do?
     ; What global variables does it make?
     ; May I use $alias(parameters,instead).skip ?
 
@@ -337,6 +341,7 @@ alias mp3play {
 
     ; Fixe ukes-ranken
     ; Hva er galt?
+    ; 09.04.2006; Fjerne hele ukes-ranken
 
     var %line $fline( [ %mp3rank.w ] ,* [ $+ [ %underlined.fname ] $+ ] *,1)
     if (%line == $null) { echo @debug Variabel line finnes ikke! (on mp3end) }
@@ -394,6 +399,11 @@ alias mp3play {
 
     if (%prev.a != %now.a) { 
       echo -s Takket være mp3.equal så spiller vi ikke %prev.a $+ , men vi spiller 6heller %now.a 
+      ; TODO - 13.05.2006 - lage brukerstyrt karaktersetting, bruke ELO til dette? Hente mer erfaring fra wwe-elo
+      echo -s Mener du at dette er helt feil, kan du kanskje prøve å gi egne karakterer.
+      echo -s Hvilken mode kjører vi i nå da? >>> $mp3.eq <<<
+      if ($mp3.eq == 1) { echo -s eq.mode er 1, så vi prøver å finne den beste }
+      if ($mp3.eq == 3) { echo -s eq.mode er 3, så den tas ut randomt. TODO - senke randomverdien hvis brukeren skippa (for dårlig låt ble valgt ut) }
       var %a %now.a
       var %b " $+ %now.a $+ "
     }
@@ -414,8 +424,13 @@ alias mp3play {
       .timerTryAgain -m 1 1 { mp3play } | halt
     }
 
+    write debug.txt $timestamp Before - %b
     echo -s WinXP debug (if you are unable to hear the mp3, you may not have the ability to play mp3s): splay -p %b
     splay -p %b 
+    write debug.txt $timestamp After
+
+    ; TODO - 09.04.2006
+    ; Lage sånn at denne vises bare en gang.
     echo -s Did a (if you are listening to mp3, please right click, choose Open MP3 dialog, setup, and tick off "Win XP Debug": /splay -p %b
   } 
   else { 
@@ -452,13 +467,23 @@ alias mp3play {
   }
 
   ; checkmp3 is used to find if the MP3 is REALLY being played, since mIRC doesn't have an internal erromsg for that
-  .timermp3check -m 1 500 { checkmp3 %a }
+  echo -s Creating timer mp3check
+  timermp3check -m 1 500 { checkmp3 %a }
 
   :further
-  unset %mp3.miss 
+  unset -s %mp3.miss 
 
   ; alias checkmp3name are used to check if your filename is good named
-  checkmp3name " $+ %b $+ "
+  echo -s checkmp3name
+  var -s %check $checkmp3name( [ %b ] )
+  if (%check == ok) {
+    var %len $int($calc($calc($mp3( [ %b ] ).length / 1000) / 2))
+    if (%len > 240) { var %len 240 }
+
+    timerlastsubmit 1 %len { last.submit %b }
+    } | else { echo -s checkmp3name endret på %b
+  }
+
 
 
   ; prev.rate = previously rated
@@ -1638,10 +1663,12 @@ alias mp3.equal {
     echo -s Code broken... eh... eq.mode2 ? Hva gjør den? Vi har tatt eqmode2=1, men dette er 2, hva gjorde 1, hva burde 2 ha gjort?
   }
   if (%eq.mode2 == 3) {
+    ; Receives a random file from $eq.check3
+
     var -s %raw.pick = $eq.check3
-    var -s %pick = $gettok($line(@mp3eq4,$rand(1,$line(@mp3eq4,0))),2-,32)
-    mark.eq4 %pick
-    return %pick
+    var -s %raw.pick $gettok(%raw.pick,2-,32)
+    mark.eq4 %raw.pick
+    return %raw.pick
   }
 
   echo -s Code broken i alias mp3.equal - vet ikke hva som skulle ha vært her
@@ -1667,8 +1694,8 @@ alias find.oldest {
 
     var %rand 1
     var %s $read(%red.file, [ %rand ] )  
-    var -s %s.file.raw $gettok(%s,1,32) 
-    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    var %s.file.raw $gettok(%s,1,32) 
+    var %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
     if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
     var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
     var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
@@ -1684,8 +1711,8 @@ alias find.oldest {
 
     var %rand 1
     var %s $read(%red.file, [ %rand ] )
-    var -s %s.file.raw $gettok(%s,1,32)
-    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    var %s.file.raw $gettok(%s,1,32)
+    var %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
     if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
     var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
     var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
@@ -1695,34 +1722,34 @@ alias find.oldest {
 
   :extract
 
-  echo -s Vi vet at alle mellomrom blir til understrek, så vi prøver dette aller først
+  ; echo -s Vi vet at alle mellomrom blir til understrek, så vi prøver dette aller først
   var %1test $replace(%s.file.raw,$chr(95),$chr(32))
   var %2test $exists(%1test)
   if (%2test) { 
     echo -s %txt $+ 03 og er lagt til
     aline @mp3.provided %1test
-set %mp3.oldest. $+ %red $nopath(%1test)
+    set %mp3.oldest. $+ %red $nopath(%1test)
     inc %red | goto second
     } | else {
-    echo -s 4First test failed, we need to perform a deeper check
+    ; echo -s 4First test failed, we need to perform a deeper check
 
-    var -s %root $left(%s.file.raw,3)
+    var %root $left(%s.file.raw,3)
 
     var %step.a 0
-    var -s %nf $nofile(%s.file.raw)
-    var -s %np $nopath(%s.file.raw)
-    var -s %steps $calc($numtok(%nf,92) - 1)
+    var %nf $nofile(%s.file.raw)
+    var %np $nopath(%s.file.raw)
+    var %steps $calc($numtok(%nf,92) - 1)
 
     :step.loop2
-    inc -s %step.a
+    inc %step.a
     if (%step.a > %steps) { goto extract.file }
 
-    var -s %step $step( [ %nf ] , [ %step.a ] )
+    var %step $step( [ %nf ] , [ %step.a ] )
 
-    echo -s > $isdir(%step) <
+    ; echo -s > $isdir(%step) <
     if (!$isdir(%step)) { echo -s 4 $+ %step  $+ finnes ikke! | goto extract.file }
     if ($isdir(%step)) { 
-      echo -s 3 $+ %step  $+ finnes, la oss fortsette 
+      ; echo -s 3 $+ %step  $+ finnes, la oss fortsette 
     }
     goto step.loop2
   }
@@ -1730,17 +1757,22 @@ set %mp3.oldest. $+ %red $nopath(%1test)
   ; Tip of the day: It doesn't matter if it's "d:\mp3" or "d:\mp3\", $exists will "make" it to $true
 
   :extract.file
-  if (%step) { echo -s Vi har folderen -> %step <- og vi skal nå søke etter mp3en -> %np <- }
+  if (%step) { 
+    ; echo -s Vi har folderen -> %step <- og vi skal nå søke etter mp3en -> %np <- 
+  }
   elseif (!%step) { echo -s Vi har IKKE folderen | var -s %step blah }
 
   var -s %np.s $replace( [ %np ] ,$chr(95),$chr(42))
   if ($findfile( [ %step ] , [ %np.s ] ,0 ) == 1) {
-var %res $findfile( [ %step ] , [ %np.s ] ,1)
-    echo -s Fant én match: %res
-set %mp3.oldest. $+ %red $nopath(%red)
+    var %res $findfile( [ %step ] , [ %np.s ] ,1)
+    var %n $read(data\mp3.unable.txt, s,  [ %res ] ) 
+    if ($readn > 0) { goto slettetid }
+
+    set %mp3.oldest. $+ %red $nopath(%red)
     echo -s %txt $+ 03 og er lagt til (men måtte søke...)
     aline @mp3.provided $findfile( [ %step ] , [ %np.s ] ,1)
     } | elseif ($findfile( [ %step ] , [ %np.s ] ,0 ) == 0) { 
+    :slettetid
     echo -s 4slettetid!
 
     var %ba $read( [ %red.file ] , [ %rand ] )
@@ -1753,6 +1785,11 @@ set %mp3.oldest. $+ %red $nopath(%red)
       echo -s 4A line from %red.file has been deleted. (It was " $+ %ba $+ ")
       echo -s It lasted for04 %dur or since04 %since
     }
+    elseif ($findfile( [ %step ] , [ %np.s ] ,0 ) >= 2) {
+      echo -s Fant to eller flere filer, vet ikke hva jeg skal gjøre nå. return
+      return
+    }
+
   }
   inc %red | goto second
   :continue
