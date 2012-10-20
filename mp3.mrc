@@ -1,4 +1,4 @@
-; MP3system v0.115
+; MP3system v0.116
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,6 +25,7 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
+; v0.116 10.05.2007 alias mp3.equal: Fixed where "))" was within the mp3 filename.
 ; v0.115 03.03.2007 in alias mp3play , the skip part, you can now choose a percentage, so it now can jump % av $mp3.x better, instead of one and one line. My example: 10% of 42 is a 4 files jump towards the best file, instead of one (/dec)
 ; v0.114 04.11.2006 alias mp3.equal: now deletes the non-existant (mp3)entry from @mp3.provided as well.
 ; v0.113 27.08.2006 22:39 dialog.rare will check if it already exists
@@ -488,9 +489,12 @@ alias mp3play {
     echo -s If mIRC freezes now (nothing happens for a few seconds, and if you click inside mIRC, "(Not responding) comes in the titlebar), it may be a an error in mpeg4system.dll.
     echo -s 0,4 Red light  If the mp3 freezes mIRC, it will be deleted at the next startup.
 
-    ; echo -s Lager en timer for MP3-sjekken -> %b <-
-    ; timermp3check 1 2 { echo -s MP3-sjekken | set -s %check.debug yes | checkmp3 %b }
+    echo -s Skriver til txt-fil, " $+ %b $+ "
+    write playmp3.txt %b
+    echo -s Lager en timer for MP3-sjekken -> %b <-
+    timermp3check2 1 0 { checkmp3 %b }
 
+    set %mp3.delete %b
     splay -p %b
     ; timermp3check 1 2 { echo -s MP3-sjekken | set -s %check.debug yes | checkmp3 %b }
 
@@ -1194,7 +1198,8 @@ alias mp3.equal {
   if (!$window(@MP3eq2)) { window -sh @MP3eq2 }
   if ($line(@MP3eq2,0) > 0) { dline @MP3eq2 1- $+ $line(@MP3eq2,0) }
 
-  ; @mp3eq3 is obsolute
+  if (!$window(@MP3eq3)) { window -sh @MP3eq3 }
+  if ($line(@MP3eq3,0) > 0) { dline @MP3eq3 1- $+ $line(@MP3eq3,0) }
 
   if (!$window(@MP3eq4)) { window -sh @MP3eq4 }
   if ($line(@MP3eq4,0) > 0) { dline @MP3eq4 1- $+ $line(@MP3eq4,0) }
@@ -1254,7 +1259,7 @@ alias mp3.equal {
   ; aline @MP3.provided $read(data\mp3skip.txt,1)
 
   ; TODO - hente inn fil fra @mp3eq8 - ferdig-kalkulerte filer
-  ; 4.11.06 - ser ut som at jeg bruker @mp3eq som "ferdigkalkulerte filer"
+  ; 4.11.06 - ser ut som at jeg bruker @mp3eq som "ferdigkalkulerte filer", 03.06.07: Vekke for lenge siden.
 
   echo -s Det er $line(@MP3.provided,0) filer i @MP3.provided
 
@@ -1305,7 +1310,9 @@ alias mp3.equal {
       goto eq.loop 
     }
 
-    echo -s > $invalid.fname( [ %1read ] )
+    var %pre.i $invalid.fname( [ %1read ] )
+    echo -s > %pre.i  <
+    if ($chr(41) isin %pre.i) { echo -s Feil! Filnavnet inneholder to sluttparanteser "))" - sletter fra @mp3.provieded | goto kommaslett }
 
     invalid.fname %1read
     echo -s invalid: %invalid
@@ -1328,6 +1335,10 @@ alias mp3.equal {
 
   var %line $rand(1,$lines(%file))
   var %a = $read(%file,%line) 
+
+  ; This is the first occourence, and it would be logical to check if this is a valid hit.
+
+  if ($exists(%a)) { echo -s filnavnet %a er ok } | else { echo -s filnavnet %a er ikke ok }
 
   :hopp
   if (!%a) { 
@@ -1367,6 +1378,14 @@ alias mp3.equal {
     dec %tempc
     goto eq.loop
   }
+
+  ; Aliner prosent skipped
+  var -s %skip $int($calc((1 - ($mp3.played(%a) / $mp3.tried(%a))) * 100))
+  if ($len(%skip) == 1) { var %skip 00 $+ %skip }
+  if ($len(%skip) == 2) { var %skip 0 $+ %skip }
+  ; if ($len(%skip) == 3) { var %skip 0 $+ %skip }
+
+  aline @mp3eq3 %skip %a
 
   ; Legger til aktuelle rankings i @mp3eq5
 
