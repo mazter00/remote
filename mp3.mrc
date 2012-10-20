@@ -1,4 +1,4 @@
-; MP3system v0.113
+; MP3system v0.115
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,6 +25,8 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
+; v0.115 03.03.2007 in alias mp3play , the skip part, you can now choose a percentage, so it now can jump % av $mp3.x better, instead of one and one line. My example: 10% of 42 is a 4 files jump towards the best file, instead of one (/dec)
+; v0.114 04.11.2006 alias mp3.equal: now deletes the non-existant (mp3)entry from @mp3.provided as well.
 ; v0.113 27.08.2006 22:39 dialog.rare will check if it already exists
 ; v0.112 27.08.2006 alias find.oldest deletes the entry if it is found in mp3.unable.txt
 ; v0.111 23.08.2006 alias find.oldest no longer alines if it (mp3) already exists in @mp3.provided, also no longer echoes (if it exists)
@@ -146,8 +148,27 @@ alias mp3play {
 
     ; Sets the random file to skipped, so eqcheck3 (or something) will find a better random mp3 next time.
     set %mp3.eq3.r skipped
-    dec -s %mp3.eq3r
-    echo -s Neste gang en random mp3 skal velges, så vil vi velge linje nr. %mp3.eq3r
+    ; Still inn hvor mange prosent bedre det skal bedres. 10% av 42 = 4.2 = 4 filer som den skal hoppe "bedre" til neste gang.
+    if (!%eq.prosent) { set -s %eq.prosent $rand(1,100) }
+    ; If the percentage was 23%, it will now be 27% etc.
+    inc -s %eq.prosent 4
+    if (%eq.prosent > 100) { set -s %eq.prosent 100 }
+
+    var %p %eq.prosent
+    var %p2 $calc( [ %p ] / 100)
+    var %xf $int($calc($mp3.x * %p2))
+
+    var %ba %mp3.eq3r
+    dec -s %mp3.eq3r %xf
+    if (%mp3.eq3r < 1) { 
+      var -s %mp3.eq3r 1 
+      if (%ba <= 1) {
+        inc -s %buttom.score 
+        var %buttom 4We hit the buttom! This system isn't working! Oh no! Happened %buttom.score times already!! 
+      }
+    }
+
+    echo -s Neste gang en random mp3 skal velges, så vil vi velge linje nr. 08,01 %mp3.eq3r  av $mp3.x $+ , forrige linje var04 %ba ( $+ %p $+ % bedre $+ , %xf filer $+ ) %buttom
 
     .timershowdiv* off
     .timerlastsubmit off
@@ -406,7 +427,7 @@ alias mp3play {
     ; Starter alias
 
     var %prev.a %a
-    var %now.a $mp3.equal(%a)
+    var -s %now.a $mp3.equal(%a)
     if (!%now.a) { echo -s alias mp3.equal failed | halt }
 
     if (%prev.a != %now.a) { 
@@ -466,7 +487,16 @@ alias mp3play {
     echo -s WinXP debug (if you are unable to hear the mp3, you may not have the ability to play mp3s): splay -p %b
     echo -s If mIRC freezes now (nothing happens for a few seconds, and if you click inside mIRC, "(Not responding) comes in the titlebar), it may be a an error in mpeg4system.dll.
     echo -s 0,4 Red light  If the mp3 freezes mIRC, it will be deleted at the next startup.
+
+    ; echo -s Lager en timer for MP3-sjekken -> %b <-
+    ; timermp3check 1 2 { echo -s MP3-sjekken | set -s %check.debug yes | checkmp3 %b }
+
     splay -p %b
+    ; timermp3check 1 2 { echo -s MP3-sjekken | set -s %check.debug yes | checkmp3 %b }
+
+
+
+
     write debug.txt $timestamp After
     echo -s 0,3 Green light  mIRC didn't freeze.
 
@@ -520,7 +550,8 @@ alias mp3play {
     if (%len > 240) { var %len 240 }
 
     timerlastsubmit 1 %len { last.submit %b }
-    } | else { echo -s checkmp3name endret på %b
+    } | else { 
+    echo -s checkmp3name endret på %b
   }
 
 
@@ -1150,36 +1181,48 @@ alias mp3.equal {
   ; Creating needed windows
   ; eq = times played, eq2 = last time, eq4 = result, eq5 = rank, eq6 = rate, eq7 = div
 
+  ; Does NOT empties the window unless needed to, goto dec(laring)
+  ; goto dec
+  ; 14.01.2007 - vil jo gjerne ha vinduene her da!
+
   :ec2
 
   ; eq=random files, eq2=last played, eq3=obsolute, eq4=pick, eq5=rate, eq6=place in div, eq7=div
-  if ( $window(@MP3eq) == $null ) window -sh @MP3eq
-  if ( $line(@MP3eq,0) > 0 ) dline @MP3eq 1- $+ $line(@MP3eq,0)
+  if (!$window(@MP3eq)) { window -sh @MP3eq }
+  if ($line(@MP3eq,0) > 0) { dline @MP3eq 1- $+ $line(@MP3eq,0) }
 
-  if ( $window(@MP3eq2) == $null ) window -sh @MP3eq2
-  if ( $line(@MP3eq2,0) > 0 ) dline @MP3eq2 1- $+ $line(@MP3eq2,0)
+  if (!$window(@MP3eq2)) { window -sh @MP3eq2 }
+  if ($line(@MP3eq2,0) > 0) { dline @MP3eq2 1- $+ $line(@MP3eq2,0) }
 
   ; @mp3eq3 is obsolute
 
-  if ( $window(@MP3eq4) == $null ) window -sh @MP3eq4
-  if ( $line(@MP3eq4,0) > 0 ) dline @MP3eq4 1- $+ $line(@MP3eq4,0)
+  if (!$window(@MP3eq4)) { window -sh @MP3eq4 }
+  if ($line(@MP3eq4,0) > 0) { dline @MP3eq4 1- $+ $line(@MP3eq4,0) }
 
-  if ( $window(@MP3eq5) == $null ) window -sh @MP3eq5
-  if ( $line(@MP3eq5,0) > 0 ) dline @MP3eq5 1- $+ $line(@MP3eq5,0)
+  if (!$window(@MP3eq5)) { window -sh @MP3eq5 }
+  if ($line(@MP3eq5,0) > 0) { dline @MP3eq5 1- $+ $line(@MP3eq5,0) }
 
-  if ( $window(@MP3eq6) == $null ) window -sh @MP3eq6
-  if ( $line(@MP3eq6,0) > 0 ) dline @MP3eq6 1- $+ $line(@MP3eq6,0)
+  if (!$window(@MP3eq6)) { window -sh @MP3eq6 }
+  if ($line(@MP3eq6,0) > 0) { dline @MP3eq6 1- $+ $line(@MP3eq6,0) }
 
-  if ( $window(@MP3eq7) == $null ) window -sh @MP3eq7
-  if ( $line(@MP3eq7,0) > 0 ) dline @MP3eq7 1- $+ $line(@MP3eq7,0)
+  if (!$window(@MP3eq7)) { window -sh @MP3eq7 }
+  if ($line(@MP3eq7,0) > 0) { dline @MP3eq7 1- $+ $line(@MP3eq7,0) }
 
   if (!$window(@MP3.provided)) { window -h @MP3.provided }
   if (!$window(@MP3.buffer)) { window -h @MP3.buffer }
 
   ; Declaring needed variables
 
+  :dec
+
   ; The mp3 that is provided by alias mp3play
-  if ($1-) { aline @MP3.provided $1- ¤ random }
+  if ($1-) { 
+    if (!$window(@MP3.provided)) { window -h @MP3.provided }
+    aline @MP3.provided $1- ¤ random 
+
+
+
+  }
 
   ; This mp3 is the lowest in the previously calculated div. Has been set as global var earlier on.
   if (%lowest2) { 
@@ -1211,6 +1254,7 @@ alias mp3.equal {
   ; aline @MP3.provided $read(data\mp3skip.txt,1)
 
   ; TODO - hente inn fil fra @mp3eq8 - ferdig-kalkulerte filer
+  ; 4.11.06 - ser ut som at jeg bruker @mp3eq som "ferdigkalkulerte filer"
 
   echo -s Det er $line(@MP3.provided,0) filer i @MP3.provided
 
@@ -1250,7 +1294,10 @@ alias mp3.equal {
       goto eq.loop 
     }
 
-    var %invalid $invalid.fname(%read)
+    echo -s read: %read
+    var -s %1read $gettok(%read,1,164)
+
+    var %invalid $invalid.fname(%1read)
     if (%invalid > 1) { 
       echo -s 4 $+ invalid er over 1, %invalid
       dline @mp3.provided %a.p 
@@ -1258,8 +1305,14 @@ alias mp3.equal {
       goto eq.loop 
     }
 
-    var -s %read.m $gettok($gettok( [ %read ] ,2,164),1-,32)
+    echo -s > $invalid.fname( [ %1read ] )
 
+    invalid.fname %1read
+    echo -s invalid: %invalid
+
+    if (!$exists( [ %1read ] )) { echo -s FINNES IKKE! SLETT FØR NOEN FINNER UT AV DET! - %1read - %read.m }
+
+    var -s %read.m $gettok($gettok( [ %read ] ,2,164),1-,32)
     if (%read.m == random) { 
       :kommaslett
       ; echo -s Denne skal tas ut fra provided 
@@ -1305,8 +1358,12 @@ alias mp3.equal {
   if (%non == finnes ikke) { 
     echo -s alias eq.check2 gav "finnes ikke" - mp3en ble funnet randomly fra en random div
     mp3.delete %a
-    var -s %fline $fline(@mp3eq, * $+ %a $+ *,1)
-    dline @mp3eq %fline 
+    var %fline $fline(@mp3eq, * $+ %a $+ *,1)
+    if (%fline) { dline @mp3eq %fline }
+
+    var %fline $fline(@mp3.provided, * $+ %a $+ *,1)
+    if (%fline) { dline @mp3.provided %fline }
+
     dec %tempc
     goto eq.loop
   }
@@ -1368,8 +1425,11 @@ alias mp3.equal {
     var %low.div $gettok($low.div2,1,32)
     if (!%low.div) { var -s %low.div 1 }
     var %low.div.files $gettok($low.div2(show),2,32)
+
     echo -s mp3.equal: Skriver  $+ %a $+  til div $+ %low.div (fordi det er færrest filer der - %low.div.files mp3er - av %low.divs divs))
+
     if (!$exists($mircdirdata\div)) { mkdir $mircdirdata\div }
+    echo -s write data\div\div $+ %low.div $+ .txt %a
     write data\div\div $+ %low.div $+ .txt %a
     var %div %low.div
   }
@@ -1596,11 +1656,11 @@ alias mp3.equal {
 
     mark.eq4 %pick2
 
-    var %pick %pick2
+    var -s %pick %pick2
   }
 
   if (%eq.mode2 == 2) { 
-    echo -s Code broken... eh... eq.mode2 ? Hva gjør den? Vi har tatt eqmode2=1, men dette er 2, hva gjorde 1, hva burde 2 ha gjort?
+    echo -s Code broken. eh.. eq.mode2 ? Hva gjør den? Vi har tatt eqmode2=1, men dette er 2, hva gjorde 1, hva burde 2 ha gjort?
   }
   if (%eq.mode2 == 3) {
     ; Receives a random file from $eq.check3
@@ -1614,147 +1674,46 @@ alias mp3.equal {
   echo -s Code broken i alias mp3.equal - vet ikke hva som skulle ha vært her
   if (!%pick) { echo -a mp3.equal: Fant visst ingen var pick... }
   echo -s Enda mer Code Broken
-  return %pick
+
+  echo -s Det er altså
+  echo -s %pick
+  echo -s vi ønsker å spille.
+  var -s %fline $fline(@mp3eq, * $+ %pick $+ *)
+  ta.vekk %pick
+
+  var %x $line(@mp3eq,0)
+  var %x2 $line(@mp3eq2,0)
+  var %x3 $line(@mp3eq5,0)
+  var %x4 $line(@mp3eq6,0)
+  var %x7 $line(@mp3eq7,0)
+
+  set -s %eqmax1 $gettok($line(@MP3eq, [ %x ] ),1,32)
+
+  var %reell $find.reell
+  var -s %eqmax2 $gettok($line(@MP3eq2, [ %reell ] ),1,32)
+
+  set -s %eqmax5 $gettok($line(@MP3eq5, [ %x3 ] ),1,32)
+  set -s %eqmax6 $gettok($line(@MP3eq6, [ %x4 ] ),1,32)
+  set -s %eqmax7 $gettok($line(@MP3eq7, [ %x7 ] ),1,32)
+
+  if (%pick) { return %pick } | else { echo -s pick ( $+ %pick $+ ) finnes ikke, da failer mp3.equal! }
 }
 
-alias find.oldest {
-  var %red 1
+alias ta.vekk {
+  var %b $1-
 
-  :second
+  var %w @mp3eq,@mp3eq2,@mp3eq4,@mp3eq5,@mp3eq6,@mp3eq7,@mp3.provided
+  var %a 0
+  ; 7 vinduer
+  var %x 7
 
-  if (%red == 1) { var %red.file data\mp3skip.txt }
-  if (%red == 2) { var %red.file data\mp3hit.txt }
-  if (%red > 2) { goto continue }
+  :loop
+  inc %a
+  if (%a > %x) { echo -s %b er blitt rensket ut fra alle vinduene | return }
 
+  var -s %wi $gettok(%w, [ %a ] ,44)
+  var -s %fline $fline( [ %wi ] , * $+ %b $+ *)
+  if (%fline) { dline %wi %fline }
 
-  ; Finding the first line from the Skipfile
-  if (%red == 1) { 
-    var %max.rand $lines(%red.file)
-    ; var %rand $rand(1, [ %max.rand ] )
-
-    var %rand 1
-    var %s $read(%red.file, [ %rand ] )  
-    var %s.file.raw $gettok(%s,1,32) 
-    var %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
-    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
-    var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
-    var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
-    var %txt Fant %rand2 linje12 (av %max.rand $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 %dur eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
-
-    goto extract 
-  } 
-
-  ; Finding the first line from the PlayFile
-  elseif (%red == 2) { 
-    var %max.rand $lines(%red.file)
-    ; var %rand $rand(1, [ %max.rand ] ) 
-
-    var %rand 1
-    var %s $read(%red.file, [ %rand ] )
-    var %s.file.raw $gettok(%s,1,32)
-    var %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
-    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
-    var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
-    var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
-    var %txt Fant %rand2 linje12 ( $+ %rand $+ / $+ %max.rand $+ / $+ $int($calc($calc(%rand / %max.rand) * 100)) $+ % $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 %dur eller siden12 %since
-  }
-
-
-  :extract
-
-  ; echo -s Vi vet at alle mellomrom blir til understrek, så vi prøver dette aller først
-  var %1test $replace(%s.file.raw,$chr(95),$chr(32))
-  var %2test $exists(%1test)
-  if (%2test) { 
-
-    if (%red == 1) { var %fra skip }
-    if (%red == 2) { var %fra hit }
-
-    if ($fline(@mp3.provided, * $+ %1test $+ *) >= 1) { echo -s %1test finnes allerede i @mp3.provided (find.oldest, aline1) } 
-    else { 
-      var %3test $read(data\mp3.unable.txt, w, [ %1test ] )
-      if (%3test) { echo -s %1test 3eksisterer, men 4den finnes også "unable" | goto slettetid }
-
-      echo -s %txt $+ 03 og er lagt til
-      aline @mp3.provided %1test ¤ oldest %fra 
-    }
-
-    set %mp3.oldest. $+ %red $nopath(%1test)
-    inc %red | goto second
-    } | else {
-    ; echo -s 4First test failed, we need to perform a deeper check
-
-    var %root $left(%s.file.raw,3)
-
-    var %step.a 0
-    var %nf $nofile(%s.file.raw)
-    var %np $nopath(%s.file.raw)
-    var %steps $calc($numtok(%nf,92) - 1)
-
-    :step.loop2
-    inc %step.a
-    if (%step.a > %steps) { goto extract.file }
-
-    var %step $step( [ %nf ] , [ %step.a ] )
-
-    ; echo -s > $isdir(%step) <
-    if (!$isdir(%step)) { echo -s 4 $+ %step  $+ finnes ikke! | goto extract.file }
-    if ($isdir(%step)) { 
-      ; echo -s 3 $+ %step  $+ finnes, la oss fortsette 
-    }
-    goto step.loop2
-  }
-
-  ; Tip of the day: It doesn't matter if it's "d:\mp3" or "d:\mp3\", $exists will "make" it to $true
-
-  :extract.file
-  if (%step) { 
-    ; echo -s Vi har folderen -> %step <- og vi skal nå søke etter mp3en -> %np <- 
-  }
-  elseif (!%step) { echo -s Vi har IKKE folderen | var -s %step blah }
-
-  var %np.s $replace( [ %np ] ,$chr(95),$chr(42))
-  if ($findfile( [ %step ] , [ %np.s ] ,0 ) == 1) {
-    var %res $findfile( [ %step ] , [ %np.s ] ,1)
-    var %n $read(data\mp3.unable.txt, s,  [ %res ] ) 
-    if ($readn > 0) { goto slettetid }
-
-    set %mp3.oldest. $+ %red $nopath(%red)
-    echo -s %txt $+ 03 og er lagt til (men måtte søke...)
-    var -s %ff $findfile( [ %step ] , [ %np.s ] ,1)
-
-    var %ulfn $underlined.fname(%ff)
-    echo -s DEBUG: sjekker %ulfn mot %s.file.raw
-    if (%ulfn != %s.file.raw) { echo -s %s.file.raw -> %ff -> $underlined.fname(%ff) 4stemmer ikke, slettetid | goto slettetid }
-
-    if (%red == 1) { var %fra skip }
-    if (%red == 2) { var %fra hit }
-
-    if ($fline(@mp3.provided, * $+ %ff $+ *) >= 1) { echo -s %ff finnes allerede i @mp3.provided (find.oldest, aline2) } 
-    else { 
-      aline @mp3.provided %ff ¤ %fra 
-    }
-
-    } | elseif ($findfile( [ %step ] , [ %np.s ] ,0 ) == 0) { 
-    :slettetid
-    echo -s 4slettetid!
-
-    var %ba $read( [ %red.file ] , [ %rand ] )
-    var %max $lines(%red.file)
-    write -dl $+ %rand %red.file
-    echo -s Linje %rand er nå blitt til: $read(%red.file, %rand)
-    var %max2 $lines(data\mp3skip.txt)
-
-    if (%max > %max2) { 
-      echo -s 4A line from %red.file has been deleted. (It was " $+ %ba $+ ")
-      echo -s It lasted for04 %dur or since04 %since
-    }
-    elseif ($findfile( [ %step ] , [ %np.s ] ,0 ) >= 2) {
-      echo -s Fant to eller flere filer, vet ikke hva jeg skal gjøre nå. return
-      return
-    }
-
-  }
-  inc %red | goto second
-  :continue
+  goto loop 
 }
