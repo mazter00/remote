@@ -1,4 +1,4 @@
-; MP3system v0.105
+; MP3system v0.106
 ; Released 1
 ; ID 64
 ; Please do not edit the three first lines. Those are needed to count build, checking for updates and confirming the script.
@@ -25,6 +25,7 @@
 
 ; HISTORY (last 15, rest is in MRNscriptet-readme.txt)
 
+; v0.106 02.04.2006 Fix a bug in alias find.oldest, will now delete if the oldest entry is invalid (nonexistent). Will echo for how long the line was there.
 ; v0.105 21.10.2005 Alias mp3.equal: Now assigns an un-div'ed mp3 automatically, so the div for the mp3 will be used in the calculation
 ; v0.104 01.10.2005 Changed behavior in alias mp3.equal. Still takes the oldest entry in mp3skip, but now takes a random line from mp3hit. This is due to calculations made in @mp3.eq4
 ; v0.103 20.09.2005 alias mp3play: It now checks the oldest entry in data\mp3skip.txt and data\mp3hit.txt, which should prevent mp3.error from coming up unnecessarily.
@@ -1222,7 +1223,7 @@ alias mp3.equal {
   echo -s alias mp3.equal starter...
 
   ; Creating needed windows
-  ; eq = times played, eq2 = last time, eq3 pick = method 1 (old), eq4 = pick (method 2), eq5 = rank, eq6 = rate
+  ; eq = times played, eq2 = last time, eq4 = result, eq5 = rank, eq6 = rate, eq7 = div
 
   :ec2
 
@@ -1248,6 +1249,7 @@ alias mp3.equal {
   if ( $line(@MP3eq7,0) > 0 ) dline @MP3eq7 1- $+ $line(@MP3eq7,0)
 
   if (!$window(@MP3.provided)) { window -h @MP3.provided }
+  if (!$window(@MP3.buffer)) { window -h @MP3.buffer }
 
   ; Declaring needed variables
 
@@ -1257,7 +1259,7 @@ alias mp3.equal {
   ; This mp3 is the lowest in the previously used div. Has been set as global var earlier on.
   if (%lowest2) { aline @MP3.provided %lowest2 }
 
-  ; This mp3 is taken randomly from a random div
+  ; This 3 (number selected under) mp3(s) is taken randomly from a random div
   ; In case of an import that contains divs, which probably contains non-existans mp3s on this (new) system
   var %rf 0
   var %rfx 3
@@ -1272,158 +1274,9 @@ alias mp3.equal {
     goto r.file
   }
 
-  var %red 0
-  inc %red
-  :second
+  ; Finding the oldest skipped mp3, and the oldest played mp3
 
-  if (%red == 1) { var %red.file data\mp3skip.txt }
-  if (%red == 2) { var %red.file data\mp3hit.txt }
-  if (%red > 2) { goto continue }
-
-
-  if (%red == 1) { 
-    var %rand 1
-    var %max.rand $lines(%red.file)
-    var %s $read(%red.file, [ %rand ] )  
-    var -s %s.file.raw $gettok(%s,1,32) 
-    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
-    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
-    echo -s Fant %rand2 linje12 (av %max.rand $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 $duration($calc($ctime - $gettok(%s,-1,32))) eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
-
-    goto extract 
-  } 
-  elseif (%red == 2) { 
-    var %max.rand $lines(%red.file)
-    var %rand $rand(1, [ %max.rand ] ) 
-    var %s $read(%red.file, [ %rand ] )
-    var -s %s.file.raw $gettok(%s,1,32)
-    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
-    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
-    echo -s Fant %rand2 linje12 ( $+ %rand $+ / $+ %max.rand $+ / $+ $int($calc($calc(%rand / %max.rand) * 100)) $+ % $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 $duration($calc($ctime - $gettok(%s,-1,32))) eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
-  }
-
-
-  :extract
-
-  echo -s Vi vet at alle mellomrom blir til understek, så vi prøver dette aller først
-  var -s %1test $replace(%s.file.raw,$chr(95),$chr(32))
-  var -s %2test $exists(%1test)
-  if (%2test) { 
-    echo -s 3Denne eksisterer
-    echo -s %rand $+ . linje fra %red.file ble funnet og er langt til ( $+ %s.file.raw $+ ) 
-    if (%search) { aline @mp3.provided %search }
-  }
-
-  var %root $left(%s.file.raw,3)
-
-  echo -s lager en no-file
-  var -s %nf $nofile(%s.file.raw)
-  var -s %steps $numtok(%nf,92)
-
-  echo -s spør step om noe
-  var -s %step $step(%nf,1)
-
-  echo -s > $isdir(%step) <
-  echo -s Vet ikke om det virka
-
-  echo -s spør step om noe(2) - loop?
-  var -s %step $step(%nf,2)
-
-
-
-
-
-
-  echo -s s.file: %s.file
-  echo -s 10New system:  %s.file  >> $findfile(%nf,%s.file,1)
-
-  echo -s return, midlertidig tatt vekk pga at jeg skal bruke det som vekkerklokke
-  ; return
-
-  ; Extract the folder
-  var %steps $numtok(%nf,92)
-
-  :try.again
-  ; Does the root even exists?
-  var %root $left(%s,3)
-  var %root.c $isdir($left(%s,3))
-
-  if (!%root.c) { 
-    echo -s Root ( $+ %root $+ ) doesn't even exists
-    if ($left(%root,1) == i) { 
-      ; If HD is i:\, try with l:\ (hardcoded fix for my external harddrive)
-      var %s l $+ $right(%s,$calc($len(%s) - 1))
-      var %nf l $+ $right(%nf,$calc($len(%nf) - 1)) 
-    } | else { goto del }
-  } 
-
-  ; Tip of the day: It doesn't matter if it's "d:\mp3" or "d:\mp3\", $exists will "make" it to $true
-
-  ; echo -s 03 $+ %root exists just fine
-  ; echo -s There are $calc(%steps - 1) folderlevels...
-
-  var %step.t 1
-
-  :step.loop
-  inc %step.t
-  if (%step.t > %steps) { 
-    var %s.time $gettok(%s,-1,32)
-    ; echo -s The first line (the folder?) in %red.file is still valid. The line has lasted for $duration($calc($ctime - $gettok(%s.time,-1,32))) or since $asctime($gettok(%s.time,-1,32),m. mmmm HH:nn:ss yyyy)
-    var %s.file $replace($gettok(%s,1,32),$chr(95),$chr(32))
-    ; Omgjør understreker til mellomrom
-    if ($exists(%s.file)) { 
-      echo -s Filen 3,1 $+ %s.file $+  finnes og kom fra %red.file Det sies at den har venta i 3,1 $+ $duration($calc($ctime - $gettok(%s.time,-1,32))) $+  eller siden 3,01 $+ $asctime($gettok(%s.time,-1,32),m. mmmm yyyy HH:nn:ss) $+ 
-      aline @mp3.provided %s.file
-      } | else { 
-      ; Søk etter mp3en
-
-      var -s %s.file * $+ $replace($nopath(%s.file),$chr(32),$chr(42)) $+ *
-      var -s %search $findfile( [ %step ] , [ %s.file ] , 1)
-
-      if ($exists(%search)) { echo -s Første linje fra %red.file ble funnet og er langt til ( $+ %search $+ ) | aline @mp3.provided %search } | else { 
-        echo -s 7DET BLE ALDRI FUNNET
-        echo -s %s.file
-        goto del
-      }
-    }
-    inc %red 
-    goto second 
-  }
-
-  :next.step
-  var %step $gettok(%nf,1- %step.t ,92)
-  if ($exists(%step)) { 
-    ; echo -s 3Går til neste step...
-    goto step.loop 
-    } | else { 
-    if ($chr(95) !isin %step) { 
-      ;echo -s Folder %step does not exists 
-      goto del 
-    }
-    if ($chr(95) isin %step) { 
-      var %step $replace(%step,$chr(95),$chr(32)) 
-      ; echo -s Loop: endret til mellomrom ( $+ %step $+ ) - $exists(%step) 
-      if ($exists(%step)) { goto step.loop }
-    }
-  }
-
-  :del
-
-  ; [] was needed!
-  ; Leser fila på nytt
-
-  var %ba $read( [ %red.file ] , [ %rand ] )
-  var %max $lines(%red.file)
-  write -dl $+ %rand %red.file
-  ; echo -s Linje %rand er nå blitt til: $read(%red.file, %rand)
-  var %max2 $lines(data\mp3skip.txt)
-  if (%max > %max2) { 
-    echo -s 4A line from %red.file has been deleted. (It was " $+ %ba $+ ")
-    echo -s It lasted for04 $duration($calc($ctime - $gettok(%ba,-1,32))) or since04 $asctime($gettok(%ba,-1,32),m. mmmm yyyy HH:nn:ss)
-  }
-
-  inc %red | goto second
-
+  var %find.oldest $find.oldest
 
   :continue
 
@@ -1797,16 +1650,124 @@ alias mp3.equal {
   return %pick
 }
 
+alias find.oldest {
+  var %red 1
+
+  :second
+
+  if (%red == 1) { var %red.file data\mp3skip.txt }
+  if (%red == 2) { var %red.file data\mp3hit.txt }
+  if (%red > 2) { goto continue }
+
+
+  ; Finding the first line from the Skipfile
+  if (%red == 1) { 
+    var %max.rand $lines(%red.file)
+    ; var %rand $rand(1, [ %max.rand ] )
+
+    var %rand 1
+    var %s $read(%red.file, [ %rand ] )  
+    var -s %s.file.raw $gettok(%s,1,32) 
+    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
+    var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
+    var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
+    var %txt Fant %rand2 linje12 (av %max.rand $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 %dur eller siden12 $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
+
+    goto extract 
+  } 
+
+  ; Finding the first line from the PlayFile
+  elseif (%red == 2) { 
+    var %max.rand $lines(%red.file)
+    ; var %rand $rand(1, [ %max.rand ] ) 
+
+    var %rand 1
+    var %s $read(%red.file, [ %rand ] )
+    var -s %s.file.raw $gettok(%s,1,32)
+    var -s %s.ast $replace(%s.file.raw,$chr(95),$chr(42))
+    if (%rand == 1) { var %rand2 første } | else { var %rand2 %rand $+ . }
+    var %dur $duration($calc($ctime - $gettok(%s,-1,32)))
+    var %since $asctime($gettok(%s,-1,32),m. mmmm HH:nn:ss yyyy)
+    var %txt Fant %rand2 linje12 ( $+ %rand $+ / $+ %max.rand $+ / $+ $int($calc($calc(%rand / %max.rand) * 100)) $+ % $+ ) fra12 %red.file som inneholder dette:12 %s Tida blir:12 %dur eller siden12 %since
+  }
+
+
+  :extract
+
+  echo -s Vi vet at alle mellomrom blir til understrek, så vi prøver dette aller først
+  var %1test $replace(%s.file.raw,$chr(95),$chr(32))
+  var %2test $exists(%1test)
+  if (%2test) { 
+    echo -s %txt $+ 03 og er lagt til
+    aline @mp3.provided %1test
+set %mp3.oldest. $+ %red $nopath(%1test)
+    inc %red | goto second
+    } | else {
+    echo -s 4First test failed, we need to perform a deeper check
+
+    var -s %root $left(%s.file.raw,3)
+
+    var %step.a 0
+    var -s %nf $nofile(%s.file.raw)
+    var -s %np $nopath(%s.file.raw)
+    var -s %steps $calc($numtok(%nf,92) - 1)
+
+    :step.loop2
+    inc -s %step.a
+    if (%step.a > %steps) { goto extract.file }
+
+    var -s %step $step( [ %nf ] , [ %step.a ] )
+
+    echo -s > $isdir(%step) <
+    if (!$isdir(%step)) { echo -s 4 $+ %step  $+ finnes ikke! | goto extract.file }
+    if ($isdir(%step)) { 
+      echo -s 3 $+ %step  $+ finnes, la oss fortsette 
+    }
+    goto step.loop2
+  }
+
+  ; Tip of the day: It doesn't matter if it's "d:\mp3" or "d:\mp3\", $exists will "make" it to $true
+
+  :extract.file
+  if (%step) { echo -s Vi har folderen -> %step <- og vi skal nå søke etter mp3en -> %np <- }
+  elseif (!%step) { echo -s Vi har IKKE folderen | var -s %step blah }
+
+  var -s %np.s $replace( [ %np ] ,$chr(95),$chr(42))
+  if ($findfile( [ %step ] , [ %np.s ] ,0 ) == 1) {
+var %res $findfile( [ %step ] , [ %np.s ] ,1)
+    echo -s Fant én match: %res
+set %mp3.oldest. $+ %red $nopath(%red)
+    echo -s %txt $+ 03 og er lagt til (men måtte søke...)
+    aline @mp3.provided $findfile( [ %step ] , [ %np.s ] ,1)
+    } | elseif ($findfile( [ %step ] , [ %np.s ] ,0 ) == 0) { 
+    echo -s 4slettetid!
+
+    var %ba $read( [ %red.file ] , [ %rand ] )
+    var %max $lines(%red.file)
+    write -dl $+ %rand %red.file
+    echo -s Linje %rand er nå blitt til: $read(%red.file, %rand)
+    var %max2 $lines(data\mp3skip.txt)
+
+    if (%max > %max2) { 
+      echo -s 4A line from %red.file has been deleted. (It was " $+ %ba $+ ")
+      echo -s It lasted for04 %dur or since04 %since
+    }
+  }
+  inc %red | goto second
+  :continue
+}
+
 alias step {
   ; Used to extract different folderlevels
   if (!$1) { return no parameter given }
-  if ($2) { var -s %s.b $2 | var -s %s.e $calc($2 + 1) | echo -s Step: Ord %s.b til %s.e } | else { return no second parameter given }
+  if ($2) { var %s.b $2 | var %s.e $calc($2 + 1) } | else { return no second parameter given }
 
-  echo -s alias step mottok: $1-
+  ; echo -s alias step mottok: $1-
 
-  var -s %step.1 $gettok($1-,-2,32)
-  var -s %step.s $replace($gettok( [ %step.1 ] ,[ %s.b ] - [ %s.e ] ,92),$chr(95),$chr(42))
-  var -s %step.s2 * $+ $gettok(%step.s,2-,92) $+ *
+  var %step.1 $gettok($1-,-2,32)
+  var %step.s $replace($gettok( [ %step.1 ] ,[ %s.b ] - [ %s.e ] ,92),$chr(95),$chr(42))
+  var %step.s2 * $+ $gettok(%step.s,2-,92) $+ *
   var %root $left($1,3)
   return $finddir(%root,%step.s2,1)
 }
