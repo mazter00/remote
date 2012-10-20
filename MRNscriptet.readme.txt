@@ -1,0 +1,104 @@
+Takk for at du ønsker å prøve ut "MRNscriptet v0.024556 build: 221 ALPHA 1.01" (eller v0.009824 build: 334 uoffisielt)
+
+Dette mIRC Scriptet er i Alpha, det vil si at det er mange ting som er ikke ferdige, mange bugs og så videre.
+
+Hvis du opplever en bug, så er det bare å sende en mail til MRNscriptet@tezt.net og fortelle meg om det.
+
+Forslag mottas med takk, og du vil få navnet ditt i en "version" update.
+
+Alle scriptfiler har en version.
+
+TODO - forskjeller fra 1.01 til 1.05
+
+Forskjeller fra ALPHA 1 til 1.01 er;
+
+Hver gang du kobler deg på IRC, så vil du prøve å laste ned en fil fra home.no.net. Dette var tidligere lightning.prohosting.com. Dette er en god grunn til å oppdatere scriptet.
+
+[mye rart, vis version forskjeller]
+
+Version-history til mp3.mrc (før kalt mp3.ini)
+
+; v0.084 It will no longer write a random rate, if there was no rate in the mp3 that was skipped. It will now only write a random rate when a new mp3 is playing
+; v0.083 "streak" added in mp3play
+; v0.082 Now also saves the "rank of the week"-window to a file, and loads in when needed. Just like @mp3rank. Saves a lot of time on it!
+; v0.081 alias splay added. If a new mp3 is played, it will add it to your playlist and play it using alias mp3play
+; v0.080 Added week-support in event on mp3end. Also optimised the code in the event. Altered several aliases to support the weekmode
+; v0.079 all instances of @MP3rare has been changed to @MP3rank
+; v0.078 Fixed several small bugs regarding the last improvement
+; v0.077 Should now include those who hasn't no ctime at all. ie: new MP3s
+; v0.076 alias check.eq2 and check.eq3, and @MP3eq2 and @MP3eq3 added. Should be even more fair when choosing MP3, with $eq.mode 1 (lowest value)
+; v0.075 scrollbar added. Will replace the 12 volume-buttons soon.
+; v0.074 several alias grab.* has been made.
+: v0.073 alias exe.regnestykke added, as well as exe2 and exe3. Big Thanks to Bagge
+; v0.072 alias mp3.comment added
+; v0.071 Fixed a bug in @MP3rank. No longer adds a clone (in the window) if the filename had a comma in it. [I wished!]
+; v0.070 Had a hard time tracking a strange bug. The score was suddenly the $ctime, which is totally wrong. I may have fixed, at least, I made a fix for it.
+; v0.069 Added $ctime at the end of the line in the txtfiles, when a MP3 has been played or skipped.
+; v0.068 Added alias eq.check. Checks for how "fragmented" @MP3eq is, by looking at the difference between lowest and mid. value. If it's 3 or more, then go to playmode "eq", else continue at "random".
+; v0.067 It now saves the @MP3rank to a file, when mIRC itself closes and loads the file when needed
+; v0.066 Fixed a bug in alias mp3.played. It was not able to get the "played" value, if the filename contained a ",". mp3hit.txt and mp3skip.txt uses filename without ",".
+; v0.065 Added Rank and Played and Skipped to the popup-output
+; v0.064 Fixed a bug in popup-output. It was showing "xx% og Ns", where it should be "xx% Nm Ns" of course. (Was showing seconds, not minutes and seconds)
+; v0.063 ex|l- @ #mIRC@Undernet helped me to make the popup msg $chan/$nick/echo -a perfectly
+; v0.062 Added "Currently Playing" in popups. Modified several aliases. Made it "winAMP" alike
+; v0.061 Grabs value from "played" or from "tried"
+; v0.060 You can now choose between the max. or the min. value. ie: to listen to the best music, choose max value.
+; v0.059 Equalization code added.
+; v0.058 A little dialog shows the progress of making ranking-list. (alias rank.rare)
+; v0.057 Re-scriptet %output. A bit cleaner layout, removed old ranking stuff...
+; v0.056 Generates a list much faster! By using aline @MP3list and savebuf
+; v0.055 It no longer forces MP3 Dialog to be active/focused
+; v0.054 Added on load event
+; v0.053 Re-scripted some of the ranking system. The system is now in version 3.
+; v0.052 Wrote even more if senteces between 5.82- and 5.9+
+; v0.051 Now also shows score if you skip, and the MP3 has never skipped before.
+; v0.050 mp3-3.ini added due to blablabla. alias rank.rare and rank.now are moved directly. TODO! update this version-history...
+; v0.049 alias rank.rare and rank.now added. Uses a new ranking system, much more accurate. Skip% and played time is such situations counts into the score each MP3 has.
+; v0.048 Added more text to %skip.txt in dialog (not in %output). Shows how much of the MP3 you played, in average, before you skip.
+; v0.047 Removed much "double-code". Used to find needed variables twice. One time for dialog input and one time for %output
+; v0.046 Fixed the $fline bug. Was failing if the MP3 filename has an ',' inside it
+; v0.045 The routine for finding random colors is moved to its own alias
+; v0.044 Added %skip.txt for dialog and in %output
+; v0.043 Changed from "The MP3 may gain many ranks and become at rank [rank]" to "The MP3 may become at rank [rank]" in both %output and in dialog
+; v0.042 Added 4 timers that counts down to title reset, after random color found. Shows time and %n tries used and secs to title reset
+; v0.041 The counter moved to dialog -t mp3, and time and tries used shows in dialog for 1 second before 'default' title pops up 
+; v0.040 Added a counter in "Time left:" field. inc's every time a new color is being made. While in loop, ID 10,11 (play MP3 and Stop MP3) are disabled...
+; v0.039 Changed the sequence in mp3play. Shows now, in dialog, details about the MP3, as well as ranks and futuistic ranking _before_ creating random colors.
+; v0.038 Added %gain.txt in %output. Tells how many ranks and which rank the MP3 will become, if "on mp3end" is 'reached' :)
+; v0.037 Fixed a bug when creating ranks for the first time, and the dialog is open. It didn't make a 'default' title when done
+; v0.036 Fixed a bug in %year, when $colorcode == 4
+; v0.035 ...and also at /mp3play. Now shows the stats of MP3, before creating the colors (which could take some time)
+; v0.034 Now did -r some IDs in dialog mp3 at mp3end, if you have dialog mp3 open :)
+; v0.033 Added a new color system. Uses .ini file. alias mp3rem is removed and mp3ban.txt is obsolute. You need mp3-dialog.ini to take advantage of the new system
+; v0.032 mp3-2.ini is created, due to the 30k limit in mIRC 5.82-
+; v0.031 Now shows when mp3rank is in progress, by "titlebaring". Shows the used time in titlebar, when done, and resets titlebar after 2 secs automatically
+; v0.030 Fixed a bug in %c.txt. Was always the same as %c.txt4, due to the colorcheck I have
+; v0.029 Added "mp3.hiddentext [0|1]" in the options.txt. Thanks to cyberdel for the 'motiavtion'. I've thought about it, but didn't do it, until...
+; v0.028 Now shows percentage in decimals, if percentage is lower then 1
+; v0.027 "Relative rank:" has been removed from the %output, but the alias mp3rank is still there.
+; v0.026 Changed the %output text from Norwegian to English and added percentage (as in mp3play %output)
+; v0.025 Finally made some colors to "on mp3end". It uses the same color theme as /mp3play
+; v0.024 mp3dialog.ini is created, due to the 30k limit in mIRC 5.82-
+; v0.023 Optimized the code for finding "illegal" color-combinations. From 4 loops to 1 loop
+; v0.022 Fixed a bug in "still hasn't been played". Showed a negative number! Added a good description to the problem and the script solves it automatically
+; v0.021 Added "mp3.progress [0|1]" in the options.txt. Updated the dialog to support that :)
+; v0.020 Fixed a bug when showing how many files who "still hasn't been played"
+; v0.019 Removed old mp3.play, mp3.hitlist and mp3.window2 and the menu's to the respective windows... Playlist will be showed in dialogs later
+; v0.018 Fixed a bug in showing percentage. Max value from wrong source,
+; v0.017 Now shows how many files that has been played at that value (0001,0002 etc) and shows in percentage as well. Will be an option later.
+; v0.016 alias mp3rank2 also uses $fline now
+; v0.015 Now uses $fline instead of writing a copy of mp3hit (%b %a) and then loadbuf it to @MP3raw > @MP3top and then find the relative rank. Reduced the lag by 20%
+; v0.014 Removed "old" on mp3end.
+; v0.013 Fixed a bug in mp3rank. Wouldn't create windows if $1 was "skip" and the windows wasn't already open...
+; v0.012 Added random colors in %output. Looks terrible because of the 16^5 possible color combinations ;) You can manually remove the awful color, right after you saw it, by typing /mp3rem and it will be "banned"
+; v0.011 Removed "old" mp3list and updated popups accordingly
+; v0.010 alias mp3rank updates $mircdirtemp\mp3.txt only at "on mp3end". Normally reduced the lag by 75%
+; v0.009 You can now seek. /mp3progress 50 skips to 50% of the file.
+; v0.008 Added mp3rank2 to show real rank. Will later be an option between mp3rank (relative rank) and mp3rank2 (real rank) or both at the same time
+; v0.007 Added alias mp3progress and alias nofend
+; v0.006 Made a new on mp3end. Now shows played and rank directly.
+; v0.005 Added a "new" alias make.mp3list (creating .txt file, instead of .ini), "new" mp3play and mp3check. "old" mp3list and mp3.play will be removed later.
+; v0.004 Fixed menu bug (missing -)
+; v0.003 Fixed a possible bug ( | .remove ), but I have a serious bug in mp3.play
+; v0.002 Added aliases into this remote file
+; v0.001 The version T|T4N has in his script. Release 1
