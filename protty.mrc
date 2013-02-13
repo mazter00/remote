@@ -1,6 +1,7 @@
-; Protty v0.011
+; Protty v0.012
 ; Simple protection/nick-reclaimer
 
+; v0.012 13.02.2013 21:14 Added uptime in percentage.
 ; v0.011 13.02.2013 20:45 alias p.antall added
 ; v0.010 13.02.2013 19:51 Started to add some stats
 ; v0.009 13.02.2013 19:51 alias prot.ok created. An alias to merge (and shorten spam/debug) lines in @protty.
@@ -13,8 +14,7 @@
 ; v0.002 13.02.2013 16:34 Added todo-list
 ; v0.001 13.02.2013 Initial release
 
-; TODO: Endre fra echo -s til winwow -a eller lignende
-; TODO: Fikse whois/raw
+; TODO: Sjekke om intervall stemmer med det intervallet som på timeren. Kanskje gi opsjon om å restte timeren?
 
 alias prot.config {
   ; Setter litt globale variabler og sånt. Manuell redigering (/set) er anbefalt.
@@ -47,15 +47,18 @@ on 1:connect:{
     if (%prot.nick) { 
       notify %prot.nick
 
-      if (%prot.nick == $me) { echo -t @protty Connecta til $server og jeg har nicket $me og alt er bra! :) } | else {
-        echo -t @protty $fulldate Connecta til $server og jeg har nicket $me og det er ikke forventa :(!
+      if (%prot.nick == $me) { echo -t @protty $ctime Connecta til $server og jeg har nicket $me og alt er bra! :)
+        var %opp 100% 
+        } | else {
+        echo -t @protty $ctime Connecta til $server og jeg har nicket $me og det er ikke forventa! :(
+        var %opp 0%
       }
     } 
     else { echo -s Variabelen prot.nick ikke satt. Skriv /set % $+ prot.nick [nick] for å sette }
 
     echo -t @protty Intervallet på timeren er: %prot.intervall
     echo -t @protty Antall ganger timeren har blitt kjørt:
-    echo -t @protty Nick oppetid:
+    echo -t @protty Nick oppetid: %opp
 
 
   }
@@ -69,7 +72,7 @@ on 1:connect:{
 raw 401:*:{ 
   ; echo -s raw 401 mottat, $1-
 
-  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er ikke online og det er ikke meg (4ghost!) så den tar vi tilbake | nick %prot.nick }
+  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er ikke online og det er ikke meg (4ghost!) så den tar vi tilbake! | nick %prot.nick }
 
 }
 
@@ -121,19 +124,18 @@ alias prot.ok {
   var %x $line(@protty,0)
 
   ; Siste linje
-  var -s %siste $line(@protty, [ %x ] )
+  var %siste $line(@protty, [ %x ] )
   var %x.msg $gettok(%siste,3-4,32)
   if (%x.msg == Alt ok) {
 
     ; Nest siste
     var %z $calc(%x - 1)
-    var -s %nest $line(@protty, [ %z ] )
+    var %nest $line(@protty, [ %z ] )
     var %z.msg $gettok(%nest,3-4,32)
     if (%z.msg == Alt ok) {
 
-      echo -s Alt ok, nå må vi bare merge de to linjene
-
-
+      ; Alt ok, sletter nederste linje
+      dline @protty %x
     }
   }
 }
@@ -144,21 +146,37 @@ alias p.antall {
   var %a $line(@protty,3)
   var %b $gettok($line(@protty,3),3,32)
   if (%b == Antall) { 
-    echo -s Riktig linje (antall)
+    ; echo -s Riktig linje (antall)
     var %9 $gettok($line(@protty,3),9,32)
     if (!%9) { 
-      echo -s 9 finnes ikke, dette er første
+      ; echo -s 9 finnes ikke, dette er første
       rline @protty 3 %a 1
       } | else {
-      echo -s 9 finnes, inc'er
-      if (%9 isnum) { inc -s %9 } | else { echo -s Fatal feil, 9 var ikke et tall: %9 | return fatal }
-      rline @protty 3 %a %9
+      ; echo -s 9 finnes, inc'er
+      if (%9 isnum) { inc %9 } | else { echo -s Fatal feil, 9 var ikke et tall: %9 | return fatal }
+      rline @protty 3 $gettok(%a,1-8,32) %9
     }
   }
 }
 
 alias p.oppetid {
-  ; ...
+  ; Hardkoder til kun en connect
+  if ($fline(@protty,*connecta*,0) == 1) {
+    var -s %intervall $gettok($line(@protty,2),7,32)
+    var %ganger $gettok($line(@protty,3),9,32)
+    var %sekunder $calc(%intervall * %ganger)
+
+    ; echo -s Scriptet har kjørt i %sekunder
+
+    var %ctime $gettok($line(@protty,1),3,32)
+    if (%ctime isnum) { 
+      ; echo -s ctime kalkulering: $calc($ctime - %ctime)
+
+      var %prosent $calc($calc($calc($ctime - %ctime) / %sekunder) * 100) $+ %
+      rline @protty 4 $gettok($line(@protty,4),1-4,32) %prosent - Sekunder kjørt: %sekunder
+
+    } | else { echo -s Ctime ikke funnet }
+  }
 }
 
 raw 311:*:{
