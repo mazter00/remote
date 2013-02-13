@@ -1,6 +1,7 @@
-; Protty v0.010
+; Protty v0.011
 ; Simple protection/nick-reclaimer
 
+; v0.011 13.02.2013 20:45 alias p.antall added
 ; v0.010 13.02.2013 19:51 Started to add some stats
 ; v0.009 13.02.2013 19:51 alias prot.ok created. An alias to merge (and shorten spam/debug) lines in @protty.
 ; v0.008 13.02.2013 17:48 Minor debugging before pause
@@ -77,7 +78,7 @@ on 1:UNOTIFY:{
   ; echo -s unotify me: $me
 
   if (($nick == %prot.nick) && ($me != %prot.nick)) { 
-    echo -t @protty Reclaiming my nick back!$nick went offline
+    echo -t @protty Reclaiming my nick back! $nick went offline
     nick %prot.nick
 
     tre
@@ -103,6 +104,13 @@ alias prot.sjekk {
     set %raw.block on
     whois %prot.nick 
   }
+
+  ; Inc'e timeren
+  p.antall
+
+  ; Sjekke opptid
+  p.oppetid
+
 }
 
 alias prot.ok {
@@ -130,6 +138,28 @@ alias prot.ok {
   }
 }
 
+alias p.antall {
+  ; Sjekker antall kjøringer for timeren. @protty linje 3.
+
+  var %a $line(@protty,3)
+  var %b $gettok($line(@protty,3),3,32)
+  if (%b == Antall) { 
+    echo -s Riktig linje (antall)
+    var %9 $gettok($line(@protty,3),9,32)
+    if (!%9) { 
+      echo -s 9 finnes ikke, dette er første
+      rline @protty 3 %a 1
+      } | else {
+      echo -s 9 finnes, inc'er
+      if (%9 isnum) { inc -s %9 } | else { echo -s Fatal feil, 9 var ikke et tall: %9 | return fatal }
+      rline @protty 3 %a %9
+    }
+  }
+}
+
+alias p.oppetid {
+  ; ...
+}
 
 raw 311:*:{
   if (%raw.block) { 
