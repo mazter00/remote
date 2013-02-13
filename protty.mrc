@@ -1,6 +1,7 @@
-; Protty v0.002
+; Protty v0.003
 ; Simple protection/nick-reclaimer
 
+; v0.003 13.02.2013 16:42 Instantly reclaims the nick (using on unotify)
 ; v0.002 13.02.2013 16:34 Added todo-list
 ; v0.001 13.02.2013 Initial release
 
@@ -32,6 +33,16 @@ on 1:connect:{
 raw 401:*:{ 
   echo -s raw 401 mottat, $1-
 
-  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er online og det er ikke meg (ghost) }
+  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er online og det er ikke meg (4ghost!) }
 
+}
+
+on 1:UNOTIFY:{ 
+  echo -s unotify nick: $nick
+  echo -s unotify me: $me
+
+  if (($nick == %prot.nick) && ($me != %prot.nick)) { 
+    echo -st Reclaiming my nick back!
+    nick %prot.nick
+  }
 }
