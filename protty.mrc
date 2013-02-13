@@ -1,6 +1,7 @@
-; Protty v0.005
+; Protty v0.006
 ; Simple protection/nick-reclaimer
 
+; v0.006 13.02.2013 17:15 Tries to block whois raw's
 ; v0.005 13.02.2013 17:02 alias prot.sjekk added
 ; v0.004 13.02.2013 16:52 Added alias tre and a timer on "on connect". Alias prot.sjekk needs to be written...
 ; v0.003 13.02.2013 16:42 Instantly reclaims the nick (using on unotify)
@@ -68,6 +69,32 @@ alias tre {
 }
 
 alias prot.sjekk {
-  if ($me != %prot.nick) { echo -s Alt ok } | else { whois %prot.nick }
+  if ($me != %prot.nick) { echo -s Alt ok } | else { 
+    set %raw.block on
+    whois %prot.nick 
+  }
   echo -s alias prot.sjekk: Sjekker for %prot.nick
 }
+
+<- :barjavel.freenode.net 311 MRN MRN ~martin 244.84-48-68.nextgentel.com * :Martinsen
+<- :barjavel.freenode.net 319 MRN MRN :#Reddit #python #bitbucket #mercurial #github #python-unregistered #freenet #tezt 
+<- :barjavel.freenode.net 312 MRN MRN barjavel.freenode.net :Paris, FR
+<- :barjavel.freenode.net 378 MRN MRN :is connecting from *@244.84-48-68.nextgentel.com 84.48.68.244
+<- :barjavel.freenode.net 317 MRN MRN 215 1360771409 :seconds idle, signon time
+<- :barjavel.freenode.net 330 MRN MRN Alnius :is logged in as
+<- :barjavel.freenode.net 318 MRN MRN :End of /WHOIS list.
+
+raw 311:*:{
+  if (%raw.block) { 
+    echo -s Blocking raw 311,319,213,378,317,330 and 318 
+    halt 
+  }
+}
+
+raw 319,312,378,317,330:*:{
+  if (%raw.block) {
+    halt 
+  }
+}
+
+raw 318:*:{ echo -s Unsetting the block | unset %raw.block }
