@@ -1,6 +1,7 @@
-; Protty v0.008
+; Protty v0.009
 ; Simple protection/nick-reclaimer
 
+; v0.009 13.02.2013 19:51 alias prot.ok created. An alias to merge (and shorten spam/debug) lines in @protty.
 ; v0.008 13.02.2013 17:48 Minor debugging before pause
 ; v0.007 13.02.2013 17:24 Introduced @protty. Also more on raw's.
 ; v0.006 13.02.2013 17:15 Tries to block whois raw's
@@ -82,14 +83,40 @@ alias tre {
 }
 
 alias prot.sjekk {
-  if ($me != %prot.nick) { 
-    echo -s Alt ok
+
+  if ($me == %prot.nick) { 
+    echo -t @protty Alt ok
+    prot.ok
     } | else { 
+    echo -t @protty alias prot.sjekk: Sjekker for %prot.nick
     set %raw.block on
     whois %prot.nick 
   }
-  echo -t @protty alias prot.sjekk: Sjekker for %prot.nick
 }
+
+alias prot.ok {
+  ; Sjekker vinduet @protty for "Alt ok" melding. Hvis de to siste linjene er like (unntatt timestampene), så fikser vi det sånn at det tar mindre plass.
+
+  var %x $line(@protty,0)
+  if (%x => 2) {
+
+    ; Siste linje
+    var -s %siste $line(@protty, [ %x ] )
+    var %x.msg $gettok(%siste,3-4,32)
+    if (%x.msg == Alt ok) {
+
+      ; Nest siste
+      var %z $calc(%x - 1)
+      var -s %nest $line(@protty, [ %z ] )
+      var %z.msg $gettok(%nest,3-4,32)
+      if ((%x.msg == Alt ok) && (%z.msg == Alt ok)) {
+
+        echo -s Alt ok, nå må vi bare merge de to linjene
+      }
+    }
+  }
+}
+
 
 raw 311:*:{
   if (%raw.block) { 
