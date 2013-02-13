@@ -1,7 +1,13 @@
-; Protty v0.001
+; Protty v0.002
 ; Simple protection/nick-reclaimer
 
+; v0.002 13.02.2013 16:34 Added todo-list
+; v0.001 13.02.2013 Initial release
+
 ; TODO: Endre fra echo -s til winwow -a eller lignende
+
+; Problem: mIRC sier "* Nick has left IRC", but uten å bruke raw. Tenker at det er noe internt (at det nicket er i en kanal som du er i, derfor vet mIRC dette.
+; mIRC har også intern oversikt over NOTIFY-lista.)
 
 alias prot.config {
   ; Setter litt globale variabler og sånt.
