@@ -1,6 +1,7 @@
-; Protty v0.007
+; Protty v0.008
 ; Simple protection/nick-reclaimer
 
+; v0.008 13.02.2013 17:48 Minor debugging before pause
 ; v0.007 13.02.2013 17:24 Introduced @protty. Also more on raw's.
 ; v0.006 13.02.2013 17:15 Tries to block whois raw's
 ; v0.005 13.02.2013 17:02 alias prot.sjekk added
@@ -20,8 +21,11 @@ alias prot.config {
 }
 
 on 1:start: {
-  if ($me != Obsidian) { nick %prot.nick }
-  echo -s Protty $gettok($read($script,1),3,32) Current nick: $me or $nick
+  window -h @protty
+
+  if (!%prot.nick) { echo -s Variabelen prot.nick ikke satt. Skriv /set % $+ prot.nick for å sette }
+  if ($me != %prot.nick) { nick %prot.nick }
+  echo -t @Protty $gettok($read($script,1),3,32) Current nick: $me or $nick
 }
 
 on 1:connect:{ 
@@ -29,16 +33,22 @@ on 1:connect:{
   ; Vet det ser rart ut med to nesten like if-setninger...
 
   if ($network == %prot.net) { 
-    window -h @protty
+
+    ; Bruker ikke -o siden dette skal være en online-timer
     .timerProtSjekk 0 90 { prot.sjekk } 
+
     if (%prot.nick) { 
-      if (%prot.nick == $me) { echo -t @protty Connecta til $server $fulldate og jeg har nicket $me og alt er bra!  :) }
       notify %prot.nick
-    } | else { echo -s Variabelen prot.nick ikke satt. Skriv /set %prot.nick [nick] for å sette }
+
+      if (%prot.nick == $me) { echo -t @protty $fulldate Connecta til $server og jeg har nicket $me og alt er bra! :) } | else {
+        echo -t @protty $fulldate Connecta til $server og jeg har nicket $me og det er ikke forventa :(!
+      }
+    } 
+    else { echo -s Variabelen prot.nick ikke satt. Skriv /set % $+ prot.nick [nick] for å sette }
   }
 
   if (($network == %prot.net) && ($nick != %prot.nick)) {
-    echo -t Feil nick! :( Vil ha %prot.nick men har $nick
+    echo -t @protty Feil nick! :( Vil ha %prot.nick men har $nick
     nick %prot.nick
   }
 }
@@ -72,25 +82,18 @@ alias tre {
 }
 
 alias prot.sjekk {
-  if ($me != %prot.nick) { echo -s Alt ok } | else { 
+  if ($me != %prot.nick) { 
+    echo -s Alt ok
+    } | else { 
     set %raw.block on
     whois %prot.nick 
   }
-  echo -s alias prot.sjekk: Sjekker for %prot.nick
+  echo -t @protty alias prot.sjekk: Sjekker for %prot.nick
 }
-
-; <- :barjavel.freenode.net 311 MRN MRN ~martin 244.84-48-68.nextgentel.com * :Martinsen
-; <- :barjavel.freenode.net 319 MRN MRN :#Reddit #python #bitbucket #mercurial #github #python-unregistered #freenet #tezt 
-; <- :barjavel.freenode.net 312 MRN MRN barjavel.freenode.net :Paris, FR
-; <- :barjavel.freenode.net 378 MRN MRN :is connecting from *@244.84-48-68.nextgentel.com 84.48.68.244
-; <- :barjavel.freenode.net 317 MRN MRN 215 1360771409 :seconds idle, signon time
-; <- :barjavel.freenode.net 330 MRN MRN Alnius :is logged in as
-; <- :barjavel.freenode.net 318 MRN MRN :End of /WHOIS list.
-; 378,317,330 
 
 raw 311:*:{
   if (%raw.block) { 
-    echo -s Blocking raw 311,319,213,378,317,330 and 318 
+    echo -t @protty Blocking raw 311,319,213,378,317,330 and 318 
     halt 
   }
 }
@@ -107,4 +110,28 @@ raw 312:*:{
   }
 }
 
-raw 318:*:{ echo -s Unsetting the block | unset %raw.block }
+raw 378:*:{
+  if (%raw.block) {
+    halt 
+  }
+}
+
+raw 317:*:{
+  if (%raw.block) {
+    halt 
+  }
+}
+
+raw 330:*:{
+  if (%raw.block) {
+    halt 
+  }
+}
+
+raw 318:*:{ 
+  if (%raw.block) {
+    echo -t @protty Whois utført
+    unset %raw.block
+    halt 
+  }
+}
