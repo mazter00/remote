@@ -1,6 +1,7 @@
-; Protty v0.004
+; Protty v0.005
 ; Simple protection/nick-reclaimer
 
+; v0.005 13.02.2013 17:02 alias prot.sjekk added
 ; v0.004 13.02.2013 16:52 Added alias tre and a timer on "on connect". Alias prot.sjekk needs to be written...
 ; v0.003 13.02.2013 16:42 Instantly reclaims the nick (using on unotify)
 ; v0.002 13.02.2013 16:34 Added todo-list
@@ -28,7 +29,7 @@ on 1:connect:{
   ; Vet det ser rart ut med to nesten like if-setninger...
 
   if ($network == %prot.net) { 
-    timerProtSjekk 0 90 { prot.sjekk } 
+    .timerProtSjekk 0 90 { prot.sjekk } 
     if (%prot.nick) { notify %prot.nick } | else { echo -s Variabelen prot.nick ikke satt. Skriv /set %prot.nick [nick] for å sette }
   }
 
@@ -64,4 +65,9 @@ alias tre {
   if (%prot.pass) { msg nickserv identify %prot.pass } | else { echo -s Passord ikke satt. Sett det med /set %prot.pass }
   msg chanserv halfop
 
+}
+
+alias prot.sjekk {
+  if ($me != %prot.nick) { echo -s Alt ok } | else { whois %prot.nick }
+  echo -s alias prot.sjekk: Sjekker for %prot.nick
 }
