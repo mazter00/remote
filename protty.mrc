@@ -1,6 +1,7 @@
-; Protty v0.009
+; Protty v0.010
 ; Simple protection/nick-reclaimer
 
+; v0.010 13.02.2013 19:51 Started to add some stats
 ; v0.009 13.02.2013 19:51 alias prot.ok created. An alias to merge (and shorten spam/debug) lines in @protty.
 ; v0.008 13.02.2013 17:48 Minor debugging before pause
 ; v0.007 13.02.2013 17:24 Introduced @protty. Also more on raw's.
@@ -15,10 +16,11 @@
 ; TODO: Fikse whois/raw
 
 alias prot.config {
-  ; Setter litt globale variabler og sånt.
+  ; Setter litt globale variabler og sånt. Manuell redigering (/set) er anbefalt.
   set %prot.net Freenode
   set %prot.nick Obsidian
   set %prot.pass Q
+  set %prot.intervall 90
 }
 
 on 1:start: {
@@ -26,7 +28,8 @@ on 1:start: {
 
   if (!%prot.nick) { echo -s Variabelen prot.nick ikke satt. Skriv /set % $+ prot.nick for å sette }
   if ($me != %prot.nick) { nick %prot.nick }
-  echo -t @Protty $gettok($read($script,1),3,32) Current nick: $me or $nick
+  echo -t @protty Protty $gettok($read($script,1),3,32) enabled... - Current nick: $me - Target nick: %prot.nick
+  echo -s Protty $gettok($read($script,1),3,32) started. Look at @protty (/window -a @protty) for debug messages.
 }
 
 on 1:connect:{ 
@@ -36,16 +39,24 @@ on 1:connect:{
   if ($network == %prot.net) { 
 
     ; Bruker ikke -o siden dette skal være en online-timer
-    .timerProtSjekk 0 90 { prot.sjekk } 
+    if (!%prot.intervall) { echo -s Variabel prot.intervall ikke satt, setter den til 90 sekunder. | set %prot.intervall 90 }
+
+    .timerProtSjekk 0 %prot.intervall { prot.sjekk }
 
     if (%prot.nick) { 
       notify %prot.nick
 
-      if (%prot.nick == $me) { echo -t @protty $fulldate Connecta til $server og jeg har nicket $me og alt er bra! :) } | else {
+      if (%prot.nick == $me) { echo -t @protty Connecta til $server og jeg har nicket $me og alt er bra! :) } | else {
         echo -t @protty $fulldate Connecta til $server og jeg har nicket $me og det er ikke forventa :(!
       }
     } 
     else { echo -s Variabelen prot.nick ikke satt. Skriv /set % $+ prot.nick [nick] for å sette }
+
+    echo -t @protty Intervallet på timeren er: %prot.intervall
+    echo -t @protty Antall ganger timeren har blitt kjørt:
+    echo -t @protty Nick oppetid:
+
+
   }
 
   if (($network == %prot.net) && ($nick != %prot.nick)) {
@@ -55,18 +66,18 @@ on 1:connect:{
 }
 
 raw 401:*:{ 
-  echo -s raw 401 mottat, $1-
+  ; echo -s raw 401 mottat, $1-
 
-  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er online og det er ikke meg (4ghost!) }
+  if (($2 == %prot.nick) && ($me != $2)) { echo -s Prot.nick er ikke online og det er ikke meg (4ghost!) så den tar vi tilbake | nick %prot.nick }
 
 }
 
 on 1:UNOTIFY:{ 
-  echo -s unotify nick: $nick
-  echo -s unotify me: $me
+  ; echo -s unotify nick: $nick
+  ; echo -s unotify me: $me
 
   if (($nick == %prot.nick) && ($me != %prot.nick)) { 
-    echo -st Reclaiming my nick back!
+    echo -t @protty Reclaiming my nick back!$nick went offline
     nick %prot.nick
 
     tre
@@ -95,24 +106,26 @@ alias prot.sjekk {
 }
 
 alias prot.ok {
-  ; Sjekker vinduet @protty for "Alt ok" melding. Hvis de to siste linjene er like (unntatt timestampene), så fikser vi det sånn at det tar mindre plass.
+  ; Sjekker vinduet @protty for "Alt ok" melding.
+  ; Hvis de to siste linjene er like (unntatt timestampene), så fikser vi det sånn at det tar mindre plass.
+  ; Merger de eller noe...
 
   var %x $line(@protty,0)
-  if (%x => 2) {
 
-    ; Siste linje
-    var -s %siste $line(@protty, [ %x ] )
-    var %x.msg $gettok(%siste,3-4,32)
-    if (%x.msg == Alt ok) {
+  ; Siste linje
+  var -s %siste $line(@protty, [ %x ] )
+  var %x.msg $gettok(%siste,3-4,32)
+  if (%x.msg == Alt ok) {
 
-      ; Nest siste
-      var %z $calc(%x - 1)
-      var -s %nest $line(@protty, [ %z ] )
-      var %z.msg $gettok(%nest,3-4,32)
-      if ((%x.msg == Alt ok) && (%z.msg == Alt ok)) {
+    ; Nest siste
+    var %z $calc(%x - 1)
+    var -s %nest $line(@protty, [ %z ] )
+    var %z.msg $gettok(%nest,3-4,32)
+    if (%z.msg == Alt ok) {
 
-        echo -s Alt ok, nå må vi bare merge de to linjene
-      }
+      echo -s Alt ok, nå må vi bare merge de to linjene
+
+
     }
   }
 }
@@ -162,3 +175,5 @@ raw 318:*:{
     halt 
   }
 }
+
+on 1:quit:{ if ($nick == $me) { echo -t @protty $me left IRC | timerprotsjekk off } }
