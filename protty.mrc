@@ -1,6 +1,7 @@
-; Protty v0.006
+; Protty v0.007
 ; Simple protection/nick-reclaimer
 
+; v0.007 13.02.2013 17:24 Introduced @protty. Also more on raw's.
 ; v0.006 13.02.2013 17:15 Tries to block whois raw's
 ; v0.005 13.02.2013 17:02 alias prot.sjekk added
 ; v0.004 13.02.2013 16:52 Added alias tre and a timer on "on connect". Alias prot.sjekk needs to be written...
@@ -9,9 +10,7 @@
 ; v0.001 13.02.2013 Initial release
 
 ; TODO: Endre fra echo -s til winwow -a eller lignende
-
-; Problem: mIRC sier "* Nick has left IRC", but uten å bruke raw. Tenker at det er noe internt (at det nicket er i en kanal som du er i, derfor vet mIRC dette.
-; mIRC har også intern oversikt over NOTIFY-lista.)
+; TODO: Fikse whois/raw
 
 alias prot.config {
   ; Setter litt globale variabler og sånt.
@@ -30,12 +29,16 @@ on 1:connect:{
   ; Vet det ser rart ut med to nesten like if-setninger...
 
   if ($network == %prot.net) { 
+    window -h @protty
     .timerProtSjekk 0 90 { prot.sjekk } 
-    if (%prot.nick) { notify %prot.nick } | else { echo -s Variabelen prot.nick ikke satt. Skriv /set %prot.nick [nick] for å sette }
+    if (%prot.nick) { 
+      if (%prot.nick == $me) { echo -t @protty Connecta til $server $fulldate og jeg har nicket $me og alt er bra!  :) }
+      notify %prot.nick
+    } | else { echo -s Variabelen prot.nick ikke satt. Skriv /set %prot.nick [nick] for å sette }
   }
 
-  if (($network == %prot.net) && (%nick != %prot.nick)) {
-    echo -s Feil nick! :(
+  if (($network == %prot.net) && ($nick != %prot.nick)) {
+    echo -t Feil nick! :( Vil ha %prot.nick men har $nick
     nick %prot.nick
   }
 }
@@ -76,13 +79,14 @@ alias prot.sjekk {
   echo -s alias prot.sjekk: Sjekker for %prot.nick
 }
 
-<- :barjavel.freenode.net 311 MRN MRN ~martin 244.84-48-68.nextgentel.com * :Martinsen
-<- :barjavel.freenode.net 319 MRN MRN :#Reddit #python #bitbucket #mercurial #github #python-unregistered #freenet #tezt 
-<- :barjavel.freenode.net 312 MRN MRN barjavel.freenode.net :Paris, FR
-<- :barjavel.freenode.net 378 MRN MRN :is connecting from *@244.84-48-68.nextgentel.com 84.48.68.244
-<- :barjavel.freenode.net 317 MRN MRN 215 1360771409 :seconds idle, signon time
-<- :barjavel.freenode.net 330 MRN MRN Alnius :is logged in as
-<- :barjavel.freenode.net 318 MRN MRN :End of /WHOIS list.
+; <- :barjavel.freenode.net 311 MRN MRN ~martin 244.84-48-68.nextgentel.com * :Martinsen
+; <- :barjavel.freenode.net 319 MRN MRN :#Reddit #python #bitbucket #mercurial #github #python-unregistered #freenet #tezt 
+; <- :barjavel.freenode.net 312 MRN MRN barjavel.freenode.net :Paris, FR
+; <- :barjavel.freenode.net 378 MRN MRN :is connecting from *@244.84-48-68.nextgentel.com 84.48.68.244
+; <- :barjavel.freenode.net 317 MRN MRN 215 1360771409 :seconds idle, signon time
+; <- :barjavel.freenode.net 330 MRN MRN Alnius :is logged in as
+; <- :barjavel.freenode.net 318 MRN MRN :End of /WHOIS list.
+; 378,317,330 
 
 raw 311:*:{
   if (%raw.block) { 
@@ -91,7 +95,13 @@ raw 311:*:{
   }
 }
 
-raw 319,312,378,317,330:*:{
+raw 319:*:{
+  if (%raw.block) {
+    halt 
+  }
+}
+
+raw 312:*:{
   if (%raw.block) {
     halt 
   }
