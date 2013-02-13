@@ -1,6 +1,7 @@
-; Protty v0.012
+; Protty v0.013
 ; Simple protection/nick-reclaimer
 
+; v0.013 13.02.2013 21:36 Check if the actual intervall is the same as the wanted one. Doesn't do anything else than spamming status window if there's a differnce
 ; v0.012 13.02.2013 21:14 Added uptime in percentage.
 ; v0.011 13.02.2013 20:45 alias p.antall added
 ; v0.010 13.02.2013 19:51 Started to add some stats
@@ -13,8 +14,6 @@
 ; v0.003 13.02.2013 16:42 Instantly reclaims the nick (using on unotify)
 ; v0.002 13.02.2013 16:34 Added todo-list
 ; v0.001 13.02.2013 Initial release
-
-; TODO: Sjekke om intervall stemmer med det intervallet som på timeren. Kanskje gi opsjon om å restte timeren?
 
 alias prot.config {
   ; Setter litt globale variabler og sånt. Manuell redigering (/set) er anbefalt.
@@ -162,7 +161,9 @@ alias p.antall {
 alias p.oppetid {
   ; Hardkoder til kun en connect
   if ($fline(@protty,*connecta*,0) == 1) {
-    var -s %intervall $gettok($line(@protty,2),7,32)
+    var %intervall $gettok($line(@protty,2),7,32)
+    if ($calc(%intervall * 1000) != $timer(protsjekk).delay) { echo -s Delayen på timeren er ikke det samme som ønsket timer. Vil du restarte timeren? }
+
     var %ganger $gettok($line(@protty,3),9,32)
     var %sekunder $calc(%intervall * %ganger)
 
