@@ -1,7 +1,8 @@
-; Protty v0.013
+; Protty v0.014
 ; Simple protection/nick-reclaimer
 
-; v0.013 13.02.2013 21:36 Check if the actual intervall is the same as the wanted one. Doesn't do anything else than spamming status window if there's a differnce
+; v0.014 14.02.2013 Hardcoded lines moved to correct lines, still hardcoded.
+; v0.013 13.02.2013 21:36 Checks if the actual intervall is the same as the wanted one. Doesn't do anything else than spamming status window if there's a differnce
 ; v0.012 13.02.2013 21:14 Added uptime in percentage.
 ; v0.011 13.02.2013 20:45 alias p.antall added
 ; v0.010 13.02.2013 19:51 Started to add some stats
@@ -142,11 +143,11 @@ alias prot.ok {
 alias p.antall {
   ; Sjekker antall kjøringer for timeren. @protty linje 3.
 
-  var %a $line(@protty,3)
-  var %b $gettok($line(@protty,3),3,32)
+  var %a $line(@protty,4)
+  var %b $gettok($line(@protty,4),3,32)
   if (%b == Antall) { 
     ; echo -s Riktig linje (antall)
-    var %9 $gettok($line(@protty,3),9,32)
+    var %9 $gettok($line(@protty,4),9,32)
     if (!%9) { 
       ; echo -s 9 finnes ikke, dette er første
       rline @protty 3 %a 1
@@ -161,20 +162,20 @@ alias p.antall {
 alias p.oppetid {
   ; Hardkoder til kun en connect
   if ($fline(@protty,*connecta*,0) == 1) {
-    var %intervall $gettok($line(@protty,2),7,32)
+    var %intervall $gettok($line(@protty,3),7,32)
     if ($calc(%intervall * 1000) != $timer(protsjekk).delay) { echo -s Delayen på timeren er ikke det samme som ønsket timer. Vil du restarte timeren? }
 
-    var %ganger $gettok($line(@protty,3),9,32)
+    var %ganger $gettok($line(@protty,4),9,32)
     var %sekunder $calc(%intervall * %ganger)
 
     ; echo -s Scriptet har kjørt i %sekunder
 
-    var %ctime $gettok($line(@protty,1),3,32)
+    var %ctime $gettok($line(@protty,2),3,32)
     if (%ctime isnum) { 
       ; echo -s ctime kalkulering: $calc($ctime - %ctime)
 
       var %prosent $calc($calc($calc($ctime - %ctime) / %sekunder) * 100) $+ %
-      rline @protty 4 $gettok($line(@protty,4),1-4,32) %prosent - Sekunder kjørt: %sekunder
+      rline @protty 4 $gettok($line(@protty,5),1-4,32) %prosent - Sekunder kjørt: %sekunder
 
     } | else { echo -s Ctime ikke funnet }
   }
