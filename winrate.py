@@ -3,6 +3,13 @@
 
 ''' 
 
+v2.0 = Works 100% better(?) :D Joke aside, it probably means rewrite. Perhaps GUI.
+v1.0 = works 100% as intended. Anything above is bonus.
+v0.1 = 1 feature added. Possible with v0.12.0
+v0.2.3.168 = 2 features, 3 bugfixes to those, build 168.
+v0.1.006 = 1 feature, build 6, no bugfixes. 
+
+v0.1.006 09.01.2014 21:43 - "record" works!
 v0.005 09.01.2014 21:21 - Can now write to winrate.txt (missing timestamp)
 v0.004 09.01.2014 - Added a check for "record". Doesn't do anything more with it. Considering standardizing the commandline usage.
 v0.003 09.01.2014 - Added classes as tuple
@@ -26,6 +33,7 @@ TODO:
 
 import os.path
 import sys
+import time
 
 # Lage liste over klasser. Blir brukt i "record" og "winrate" (og andre steder hvor vi looper klassene)
 
@@ -51,18 +59,24 @@ def record(klasse1,klasse2,resultat):
     print '2: ' + klasse2
     print '3: ' + resultat
     
+    # Finne tidsformat
+    # Paladin Mage W 1389278750 Thu Jan 09 15:45:50 2014
+    
+    tid = time.strftime("%s") + ' ' + time.strftime("%a %b %d %H:%M:%S %Y")
+    print 'tid: ' + tid
+    
     if resultat:
     
         sizeba = os.path.getsize(file)
         print 'Current size: ' + str(sizeba)
     
         f = open(file, "a")
-        f.write(klasse1 + klasse2 + resultat + '\n')
+        f.write(klasse1 + ' ' + klasse2 + ' ' + resultat + ' ' + tid + '\n')
         f.close()
     
         size = os.path.getsize(file)
         print "Ny size: " + str(size)
-        if sizeba != size: print "Alt ok, sjekk file" 
+        if sizeba != size: print "Alt ok, sjekk fil" 
         else: print "Ikke ok, sjekk fil, samme størrelse"
 
 # Siden jeg ikke har noen main-loop enda...
