@@ -3,6 +3,7 @@
 
 ''' 
 
+v0.005 09.01.2014 21:21 - Can now write to winrate.txt (missing timestamp)
 v0.004 09.01.2014 - Added a check for "record". Doesn't do anything more with it. Considering standardizing the commandline usage.
 v0.003 09.01.2014 - Added classes as tuple
 v0.002 08.01.2014 - Added timestamp memo and added TODO
@@ -32,12 +33,10 @@ klasser = ('Warrior', 'Shaman', 'Rogue', 'Paladin', 'Hunter', 'Druid', 'Warlock'
 
 # echo klasser
 print klasser
-print 'Lengde av klasser: ' + str(len(klasser))
-print klasser[0] + " <- klasse 1"
+# print 'Lengde av klasser: ' + str(len(klasser))
+# print klasser[0] + " <- klasse 1"
 
-a = 'hei'
-print a
-
+# default file. maybe hide my name in the future
 file = '/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'
 
 exists = os.path.isfile(file)
@@ -46,16 +45,37 @@ print exists
 if not exists: 
     print 'finnes ikke, avslutter'
     sys.exit("Kildefil mangler")
-
-
-def record():
-    print locals().keys()
+  
+def record(klasse1,klasse2,resultat):
+    print '1: ' + klasse1
+    print '2: ' + klasse2
+    print '3: ' + resultat
     
+    if resultat:
+    
+        sizeba = os.path.getsize(file)
+        print 'Current size: ' + str(sizeba)
+    
+        f = open(file, "a")
+        f.write(klasse1 + klasse2 + resultat + '\n')
+        f.close()
+    
+        size = os.path.getsize(file)
+        print "Ny size: " + str(size)
+        if sizeba != size: print "Alt ok, sjekk file" 
+        else: print "Ikke ok, sjekk fil, samme størrelse"
+
+# Siden jeg ikke har noen main-loop enda...
+
 for arg in sys.argv: 
     print 'Alle: ' + str(sys.argv[:])
     
     if len(sys.argv[:]) <= 1: 
         print 'Ingen argumenter mottatt'
+        print 'Usage: winrate.py record CLASS_PLAYED CLASS_MET RESULT(W|L)'
+        print 'Usage: winrate.py winrate'
+        print 'Usage: winrate.py normal'
+        print 'Usage: winrate.py normal Quest CLASS_1 CLASS_2'
         break
     
     if sys.argv[1] == 'record': 
@@ -80,6 +100,7 @@ for arg in sys.argv:
         print "Sjekk: " + str(ok)
         if ok == 3: 
             print 'Alt ok, klasser og resultat er her'
+            record(sys.argv[2],sys.argv[3],sys.argv[4])
         else:
             print 'IKKE OK!!!'
             break
@@ -93,3 +114,4 @@ for arg in sys.argv:
     
 if __name__ == "__main__":
     print 'is main loop'
+    
