@@ -16,8 +16,6 @@ v0.003 09.01.2014 - Added classes as tuple
 v0.002 08.01.2014 - Added timestamp memo and added TODO
 v0.001 07.01.2014 - Initial
 
-Upcomming usage of timestamp "+DATE: %s %a %b %d %H:%M:%S %Y" 
-
 TODO:
 
 - Lese file
@@ -35,6 +33,58 @@ import os.path
 import sys
 import time
 
+# Gloval variables
+
+global file
+file = '/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'
+
+# Most important def first
+
+def filecheck(file='/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'):
+    print file
+    print "fil som skal sjekkes ^"
+    
+    exists = os.path.isfile(file)
+    print exists
+
+    if not exists: 
+        print 'finnes ikke, avslutter'
+        sys.exit("Vedlagt kildefil mangler")
+    return 'filok'
+
+# Check for "-f" in arguments
+
+filarg = ['-f', '--file']
+
+# print filarg
+
+funnet = False
+global filnavn 
+filnavn = ''
+
+for filarg in sys.argv:
+    current = filarg
+
+    if funnet == 'funnet': 
+        filnavn = current
+        print "Filnavnet som ble bedt om er: " + current
+        break
+    
+    if '-f' in current: 
+        funnet = 'funnet'
+    
+if filnavn:
+    print "Filnavn ønsket?: " + filnavn
+    file = filnavn
+    
+    check = filecheck(file)
+    print check
+    if check != 'filok':
+        sys.exit("-f filnavn ikke gyldig")
+    
+        print "The file we are gonna work against is: " + filnavn
+
+    
 # Lage liste over klasser. Blir brukt i "record" og "winrate" (og andre steder hvor vi looper klassene)
 
 klasser = ('Warrior', 'Shaman', 'Rogue', 'Paladin', 'Hunter', 'Druid', 'Warlock', 'Mage', 'Priest');
@@ -122,10 +172,4 @@ for arg in sys.argv:
         
         break
     
-    # Finne andre og tredje ordet
-    
-    print locals().keys()
-    
-if __name__ == "__main__":
-    print 'is main loop'
-    
+if __name__ == "__main__": pass
