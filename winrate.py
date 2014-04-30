@@ -9,6 +9,8 @@ v0.1 = 1 feature added. Possible with v0.12.0
 v0.2.3.168 = 2 features, 3 bugfixes to those, build 168.
 v0.1.006 = 1 feature, build 6, no bugfixes. 
 
+v0.1.008 30.04.2014 Can now add "arena" to function record.
+v0.1.007 10.01.2014 The check for -f and --file works (except for "-f" only)
 v0.1.006 09.01.2014 21:43 - "record" works!
 v0.005 09.01.2014 21:21 - Can now write to winrate.txt (missing timestamp)
 v0.004 09.01.2014 - Added a check for "record". Doesn't do anything more with it. Considering standardizing the commandline usage.
@@ -33,10 +35,15 @@ import os.path
 import sys
 import time
 
-# Gloval variables
+# Global variables
 
 global file
 file = '/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'
+
+global fileapply
+fileapply = False
+
+arena = None
 
 # Most important def first
 
@@ -48,8 +55,7 @@ def filecheck(file='/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'):
     print exists
 
     if not exists: 
-        print 'finnes ikke, avslutter'
-        sys.exit("Vedlagt kildefil mangler")
+        sys.exit("Datafile is non-existant!")
     return 'filok'
 
 # Check for "-f" in arguments
@@ -72,6 +78,7 @@ for filarg in sys.argv:
     
     if '-f' in current: 
         funnet = 'funnet'
+        if len(sys.argv) <= 2: sys.exit("-f (or --file) received, but no filename")
     
 if filnavn:
     print "Filnavn ønsket?: " + filnavn
@@ -82,7 +89,8 @@ if filnavn:
     if check != 'filok':
         sys.exit("-f filnavn ikke gyldig")
     
-        print "The file we are gonna work against is: " + filnavn
+    print "The file we are gonna work against is: " + filnavn
+    fileapply = True
 
     
 # Lage liste over klasser. Blir brukt i "record" og "winrate" (og andre steder hvor vi looper klassene)
@@ -91,23 +99,12 @@ klasser = ('Warrior', 'Shaman', 'Rogue', 'Paladin', 'Hunter', 'Druid', 'Warlock'
 
 # echo klasser
 print klasser
-# print 'Lengde av klasser: ' + str(len(klasser))
-# print klasser[0] + " <- klasse 1"
-
-# default file. maybe hide my name in the future
-file = '/run/media/morten/DATA/mIRC-Continued/data/winrate.txt'
-
-exists = os.path.isfile(file)
-print exists
-
-if not exists: 
-    print 'finnes ikke, avslutter'
-    sys.exit("Kildefil mangler")
   
-def record(klasse1,klasse2,resultat):
+def record(klasse1,klasse2,resultat,arena):
     print '1: ' + klasse1
     print '2: ' + klasse2
     print '3: ' + resultat
+    if arena != None: print '4: ' + arena
     
     # Finne tidsformat
     # Paladin Mage W 1389278750 Thu Jan 09 15:45:50 2014
@@ -121,7 +118,10 @@ def record(klasse1,klasse2,resultat):
         print 'Current size: ' + str(sizeba)
     
         f = open(file, "a")
-        f.write(klasse1 + ' ' + klasse2 + ' ' + resultat + ' ' + tid + '\n')
+        if arena != None: 
+            f.write(klasse1 + ' ' + klasse2 + ' ' + resultat + ' ' + arena + ' ' + tid + '\n')
+        else:
+            f.write(klasse1 + ' ' + klasse2 + ' ' + resultat + ' ' + tid + '\n')
         f.close()
     
         size = os.path.getsize(file)
@@ -129,18 +129,18 @@ def record(klasse1,klasse2,resultat):
         if sizeba != size: print "Alt ok, sjekk fil" 
         else: print "Ikke ok, sjekk fil, samme størrelse"
 
-# Siden jeg ikke har noen main-loop enda...
-
 for arg in sys.argv: 
     print 'Alle: ' + str(sys.argv[:])
     
     if len(sys.argv[:]) <= 1: 
         print 'Ingen argumenter mottatt'
-        print 'Usage: winrate.py record CLASS_PLAYED CLASS_MET RESULT(W|L)'
+        print 'Usage: winrate.py record CLASS_PLAYED CLASS_MET RESULT(W|L) [Arena]'
         print 'Usage: winrate.py winrate'
         print 'Usage: winrate.py normal'
         print 'Usage: winrate.py normal Quest CLASS_1 CLASS_2'
         break
+    
+    # TODO - Den behøver ikke å være på plass 1
     
     if sys.argv[1] == 'record': 
         ok = 0
@@ -160,11 +160,28 @@ for arg in sys.argv:
         if sys.argv[4] in 'WL':  
             print 'ok for WL'
             ok += 1
+            
+        try:
+            if sys.argv[5] != None:
+                if sys.argv[5] == 'arena' or 'Arena':
+                    print sys.argv[5] + ' <- arena?'
+                    print 'ok for ev. arena'
+                    arena = 'arena'
+                    ok += 1
+                else:
+                    print 'Feil!'
+                    print sys.argv[5] + '--' + sys.argv[5].lower 
+                    break
+                
+        except IndexError:
+            print 'IndexError, setter arena som None'
+            arena = None
+            ok += 1
 
         print "Sjekk: " + str(ok)
-        if ok == 3: 
+        if ok == 4: 
             print 'Alt ok, klasser og resultat er her'
-            record(sys.argv[2],sys.argv[3],sys.argv[4])
+            record(sys.argv[2],sys.argv[3],sys.argv[4],arena)
         else:
             print 'IKKE OK!!!'
             break
