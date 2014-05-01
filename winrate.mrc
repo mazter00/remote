@@ -1,10 +1,28 @@
-; WinRate v0.001
+; WinRate v0.003
 ; For Hearthstone win tracking and champion choosing purposes
+
+; 01.05.2014 v0.003 - Now under Wine using mIRC 7.27, refactoring a bit, will be making .ini-file soon
+; 30.04.2014 v0.002 - Edit under Linux, fixed alias normal choosing correct champ. Corrected ordering of champs.
 
 ; Klasser
 ; Warrior, Shaman, Rogue
 ; Paladin, Hunter, Druid
 ; Warlock, Mage, Priest
+
+alias getlevel {
+  ; Get level for a champ
+  ; If $1 = champ, return it
+  ; If nothing requested, return the arrau
+
+  ; Angi level og antall kort for champene
+  ; var %array Warrior Shaman Rogue Paladin Hunter Druid Warlock Mage Priest
+  var %array Mage Shaman Druid Paladin Warlock Hunter Warrior Rogue Priest
+
+  ; Ny champ-oppstilling
+  ; Mage - Shaman - Druid -- Paladin - Warlock - Hunter -- Warrior - Rogue - Priest
+  var %array.l 21 17 16 23 14 18 20 18 18
+  var %array.k 15 16 15 16 17 16 16 19 15
+}
 
 alias levling {
   ; If you are new to the game, basic cards are locked. Please define how many you have (20=full)
@@ -59,7 +77,7 @@ alias quest {
 
   var %array Paladin Priest
   var %array.l 
-  ; Manuelt, skriv inn level på klassene i questen
+  ; Manuelt, skriv inn level pÃ¥ klassene i questen
   var %w.l 21 18
   var %p.l 12 14
 
@@ -67,7 +85,7 @@ alias quest {
 
   var %x.l $calc(%w.l + %p.l)
 
-  if (%progress >= $gettok(%quest,2,32)) { echo -s Quest fullført | return done }
+  if (%progress >= $gettok(%quest,2,32)) { echo -s Quest fullfÃ¸rt | return done }
 
   var -s %array $gettok(%quest,3,32) $gettok(%quest,5,32)
   var -s %r $rand(1, [ %x.l ] )
@@ -91,7 +109,7 @@ alias winrate {
 
   echo -s $line(@winrate,0) linjer loadet til vindu @winrate
 
-  var %array Warrior Shaman Rogue Paladin Hunter Druid Warlock Mage Priest
+  var %array Mage Shaman Druid Paladin Warlock Hunter Warrior Rogue Priest
   var %arrayT
   var %arrayW
   var %arrayL
@@ -133,7 +151,7 @@ alias winrate {
       return done 
     }
 
-    echo -s Winraten for $gettok( [ %array ] , [ %a ] ,32) er $round($calc($calc($gettok( [ %arrayW ] , [ %a ] ,32) / $gettok( [ %arrayT ] , [ %a ] ,32)) *100),2) $+ % $+  ¤¤¤ $gettok( [ %arrayT ] , [ %a ] ,32) kamper, $gettok( [ %arrayW ] , [ %a ] ,32) wins og $gettok( [ %arrayL ] , [ %a ] ,32) tap
+    echo -s Winraten for $gettok( [ %array ] , [ %a ] ,32) er $round($calc($calc($gettok( [ %arrayW ] , [ %a ] ,32) / $gettok( [ %arrayT ] , [ %a ] ,32)) *100),2) $+ % $+  Â¤Â¤Â¤ $gettok( [ %arrayT ] , [ %a ] ,32) kamper, $gettok( [ %arrayW ] , [ %a ] ,32) wins og $gettok( [ %arrayL ] , [ %a ] ,32) tap
     if ($1 == $gettok( [ %array ] , [ %a ] ,32)) { return $round($calc($calc($gettok( [ %arrayW ] , [ %a ] ,32) / $gettok( [ %arrayT ] , [ %a ] ,32)) *100),2) % $gettok( [ %arrayT ] , [ %a ] ,32) kamper $gettok( [ %arrayW ] , [ %a ] ,32) wins og $gettok( [ %arrayL ] , [ %a ] ,32) tap }
 
     goto loop2
@@ -153,7 +171,7 @@ alias winrate {
   ; echo -s $line(@winrate3,0) linjer loadet til vindu @winrate3 (Antall wins med %get $+ )
   ; echo -s $line(@winrate4,0) linjer loadet til vindu @winrate4 (Antall tap med %get $+ )
 
-  ; Legger sammen stats før ny loop
+  ; Legger sammen stats fÃ¸r ny loop
 
   var %arrayT %arrayT $line(@winrate2,0)
   var %arrayW %arrayW $line(@winrate3,0)
@@ -164,19 +182,6 @@ alias winrate {
   clear @winrate4
 
   goto loop
-
-
-}
-
-alias getlevel {
-  ; Get level for a champ
-  ; If $1 = champ, return it
-  ; If nothing requested, return the arrau
-
-  ; Angi level og antall kort for champene
-  var %array Warrior Shaman Rogue Paladin Hunter Druid Warlock Mage Priest
-  var %array.l 14 14 11 16 12 11 10 18 13
-  var %array.k 14 12 13 12 11 12 12 12 10
 
 
 }
@@ -198,9 +203,9 @@ alias normal {
   }
 
   ; Angi level og antall kort for champene
-  var %array Warrior Shaman Rogue Paladin Hunter Druid Warlock Mage Priest
-  var %array.l 18 17 16 21 15 13 13 21 18
-  var %array.k 15 14 15 12 13 12 13 13 14
+  var %array Mage Shaman Druid Paladin Warlock Hunter Warrior Rogue Priest
+  var %array.l 21 17 16 23 14 18 20 18 18
+  var %array.k 15 16 15 16 17 16 16 19 15
 
   var %x $numtok( [ %array ] ,32)
 
@@ -209,7 +214,7 @@ alias normal {
 
   :q
   if (%mode == 1) {
-    ; Enkelt, større verdi = større sjanse
+    ; Enkelt, stÃ¸rre verdi = stÃ¸rre sjanse
 
     var %a 0
     var %array.s
@@ -232,7 +237,7 @@ alias normal {
     goto loop
   }
 
-  ; Nå har vi kort+level sammenlagt
+  ; NÃ¥ har vi kort+level sammenlagt
 
   :win
   ; Finne winrate!
@@ -250,11 +255,11 @@ alias normal {
   var -s %win $winrate( $gettok( [ %array ] , [ %a ] ,32) )
   var -s %win2 $gettok( [ %win ] , 1 , 32)
 
-  if (%win2 > 0) { var -s %array.w %array.w $int(%win2) } | else { echo -s Denne har 0 winrate, få et win! :) Champ: $gettok( [ %array ] , [ %a ] ,32) | return $gettok( [ %array ] , [ %a ] ,32) }
+  if (%win2 > 0) { var -s %array.w %array.w $int(%win2) } | else { echo -s Denne har 0 winrate, fÃ¥ et win! :) Champ: $gettok( [ %array ] , [ %a ] ,32) | return $gettok( [ %array ] , [ %a ] ,32) }
 
   goto loopw
 
-  ; Nå skal vi "fuse" winrate med det sammenlagt
+  ; NÃ¥ skal vi "fuse" winrate med det sammenlagt
   ; array.s + array.w = array.s
   ; array.s2 finnes ikke
 
@@ -288,17 +293,19 @@ alias normal {
 
   echo -s Picking mode! x er %x
   var -s %r $rand(1, [ %x ] )
+  var %nummer
 
   var %a 0
   :a
   inc %a
-  if (%a > %x) { echo -s Loop failed | halt }
+  if (%a > 9) { echo -s Loop failed | halt }
 
   var -s %num $gettok( [ %array.s2 ] , [ %a ] , 32)
   if (!%num) { echo -s Fant ikke num | return }
-  if (%r <= %num) { echo -s Denne velger vi! Champ nr: %a eller champ: $gettok( [ %array ] , [ %a ] ,32)  | return }
 
-  var -s %r $calc(%r - %num)
+  var -s %nummer $calc(%num + %nummer)
+  if (%r <= %nummer) { echo -s Denne velger vi! Champ nr: %a eller champ: $gettok( [ %array ] , [ %a ] ,32)  | return }
+
   goto a
 
 
