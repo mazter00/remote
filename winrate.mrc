@@ -1,79 +1,159 @@
-; WinRate v0.003
+; WinRate v0.005
 ; For Hearthstone win tracking and champion choosing purposes
 
+; v0.005 02.05.2014 Now has level, cards and quest info in a ini-file.
+; v0.004 01.05.2014 23:05 - Fix for Wine and/or mIRC v7 that insists on using %APPDATA%.
 ; 01.05.2014 v0.003 - Now under Wine using mIRC 7.27, refactoring a bit, will be making .ini-file soon
 ; 30.04.2014 v0.002 - Edit under Linux, fixed alias normal choosing correct champ. Corrected ordering of champs.
 
 ; Klasser
-; Warrior, Shaman, Rogue
-; Paladin, Hunter, Druid
-; Warlock, Mage, Priest
+; Mage - Shaman - Druid 
+; Paladin - Warlock - Hunter 
+; Warrior - Rogue - Priest
 
-alias getlevel {
-  ; Get level for a champ
-  ; If $1 = champ, return it
-  ; If nothing requested, return the arrau
+; Priority
+; Get every hero to level 10. Random choose a champ if eligable.
+; Quest
+; Arena if gold => 150
+; Buy a pack of card if gold => 100 AND < 150
+; Miniquest (3 wins = 10 gold, max = 100 gold, i.e. 30 wins from 02am to 02am. We can use winrate.txt for that)
 
-  ; Angi level og antall kort for champene
-  ; var %array Warrior Shaman Rogue Paladin Hunter Druid Warlock Mage Priest
-  var %array Mage Shaman Druid Paladin Warlock Hunter Warrior Rogue Priest
 
-  ; Ny champ-oppstilling
-  ; Mage - Shaman - Druid -- Paladin - Warlock - Hunter -- Warrior - Rogue - Priest
-  var %array.l 21 17 16 23 14 18 20 18 18
-  var %array.k 15 16 15 16 17 16 16 19 15
+alias updatewinrateini {
+  ; Updates the .ini file (not the record). It contains level of hero and number of class-cards.
+
+  ; Quest - updated manually. Type "Win X Class or Class". Number of minions killed etc doesn't count, we want to know class-spesific. "Win 3 Any" is okay.
+  var %quest1 Win 3 Any
+  var %quest2 
+  var %quest3 
+
+  if (%quest1) { writeini %winrateini Quest Quest1 %quest1 }
+  ; Start Heathstone, look at Quest Log and take a look and update this values
+  if (%winrateini) {
+    if (%quest1) { writeini %winrateini Quest Quest1 %quest1 } | else { writeini %winrateini Quest Quest1 None }
+    if (%quest2) { writeini %winrateini Quest Quest2 %quest2 } | else { writeini %winrateini Quest Quest2 None }
+    if (%quest3) { writeini %winrateini Quest Quest3 %quest3 } | else { writeini %winrateini Quest Quest3 None }
+
+
+    writeini %winrateini Mage Level 22
+    writeini %winrateini Shaman Level 18
+    writeini %winrateini Druid Level 17
+    writeini %winrateini Paladin Level 24
+    writeini %winrateini Warlock Level 14
+    writeini %winrateini Hunter Level 20
+    writeini %winrateini Warrior Level 22
+    writeini %winrateini Rogue Level 18
+    writeini %winrateini Priest Level 19
+
+    ; Open up "Collection" and manually look through each champ :/
+    ; Ordering is fucked up as well
+    ; 8 cards per full page
+    writeini %winrateini Druid Cards 16
+    writeini %winrateini Hunter Cards 16
+    writeini %winrateini Mage Cards 17
+    writeini %winrateini Paladin Cards 16
+    writeini %winrateini Priest Cards 16
+    writeini %winrateini Rogue Cards 19
+    writeini %winrateini Shaman Cards 17
+    writeini %winrateini Warlock Cards 17
+    writeini %winrateini Warrior Cards 18
+
+    ; While we're at it, write the sum of those two. Will be used when choosing champ later on (/normal, /quest)
+
+    var %array Mage Shaman Druid Paladin Warlock Hunter Warrior Rogue Priest
+    var -s %arrayx $numtok(%array,32)
+
+    var %a 0
+    :loop
+    inc %a
+    if (%a > %arrayx) { echo -s Done updating! | return }
+    var %1 $readini( [ %winrateini ] , [ $gettok(%array , [ %a ] , 32) ] ,Level)
+    var %2 $readini( [ %winrateini ] , [ $gettok(%array , [ %a ] , 32) ] ,Cards)
+    var %c $calc(%1 + %2)
+    if (%c) { writeini %winrateini $gettok(%array , [ %a ] , 32) Sum %c } | else { echo -s Sum ikke funnet | return error }
+    goto loop
+  }
 }
 
-alias levling {
-  ; If you are new to the game, basic cards are locked. Please define how many you have (20=full)
-  ; All code is currenyly hardcoded
+on 1:start:{
+  ; Create global variable for where data\winrate.txt is stored called %winratetxt
 
-  ; Manuelt skriv inn champions...
-  var %array.champ Hunter
-  if (!%array.champ) { echo -s Ingen array funnet, du er ferdiglevlet | return done }
-
-  ; Liste med bokstav.m
-  var %h.m 20
-
-  ; Make the number "real"
-
-  var %h $calc(20 - %h.m)
-
-  ; Pluss variablene sammen
-  var -s %x $calc(%h)
-
-  var -s %random $rand(1, [ %x ] )
-  if (%random <= 0) { echo -s Ingen behov, du er ferdiglevlet, bruk en annen alias | return done }
-
-  var -s %array %h
-
-  var %a
-  :loop
-  inc %a
-  var -s %get $gettok( [ %array ] ,{ %a ] ,32)
-
-  if (%random <= %get) { echo -s Vi har funnet en random kandidat, det er champ: $gettok([ %array.champ ] , [ %a ] ,32) | return  dome - %a } | else { 
-    echo -s 7Nope, det ble ikke noe med $gettok([ %array.champ ] , [ %a ] ,32) i denne omgang
-
-    var -s %random $calc(%random - %get)
-    goto loop 
+  ; Linux fix
+  var %a $mircexe 
+  var %x $numtok(%a,92) 
+  var %s $gettok(%a,1 - [ $calc(%x - 1) ] , 92) 
+  var %f %s
+  var %b $chr(92) $+ data\winrate.txt 
+  var %c $chr(92) $+ data\winrate.ini
+  var %ss %s
+  var %s %s $+ %b 
+  var -s %true $exists(%s)
+  if (!%true) {
+    echo -s Finnes ikke, lag en data\winrate.txt
+    mkdir %f $+ \data
+    echo -s Folder %f $+ \data created
+    write -n %s
+    echo -s File winrate.txt created
   }
+  set -s %winratetxt %s
 
-
+  ; For winrate.ini
+  var %s2 %ss $+ %c
+  var -s %true $exists(%s2)
+  if (!%true) {
+    echo -s Finnes ikke, lag en data\winrate.ini
+    write -n %s2
+    echo -s File winrate.ini created
+  }
+  set -s %winratetxt %s
+  set -s %winrateini %s2
 }
 
 alias record {
   ; Records a match played
   if (!$3) { echo -s Din champ spilt og din motstander champ og om du vant eller ikke, f.eks Warrior Priest W | return fail }
 
-  write data\winrate.txt $1- $ctime $fulldate
+  write %winratetxt $1- $ctime $fulldate
 }
 
 alias quest {
 
-  ; Skriv inn current quest
-  var %quest win 2 Mage OR Shaman
-  var %progress 0
+  ; Formatet er "Win 3 Any" or "Win 5 Shaman or Warrior"
+  if (!%winrateini) { echo -s You need data\winrate.ini which is currently missing - restart mIRC or /updatewinrateini | return }
+  var -s %quest1 $readini(%winrateini,Quest,Quest1)
+  var -s %quest2 $readini(%winrateini,Quest,Quest2)
+  var -s %quest3 $readini(%winrateini,Quest,Quest3)
+
+  var %array
+
+  if ((%quest1) && (%quest1 != None)) { 
+    echo -s Vi har en gyldig quest - quest 1 - %quest1
+    if ($gettok(%quest1,3,32) == Any) { echo -s Blæ, det har jo ikke noe å si... } | else {
+      var %array $gettok(%quest1,2,32) $gettok(%quest1,3,32) $gettok(%quest1,5,32)
+    }
+  }
+
+  if ((%quest2) && (%quest2 != None)) { 
+    echo -s Vi har en gyldig quest - quest 2 - %quest2
+    if ($gettok(%quest2,3,32) == Any) { echo -s Blæ, det har jo ikke noe å si... } | else {
+      var -s %array %array $gettok(%quest2,2,32) $gettok(%quest2,3,32) $gettok(%quest2,5,32)
+    }
+
+  }
+
+  if ((%quest3) && (%quest3 != None)) { 
+    echo -s Vi har en gyldig quest - quest 3 - %quest3
+    if ($gettok(%quest3,3,32) == Any) { echo -s Blæ, det har jo ikke noe å si... } | else {
+      var -s %array %array $gettok(%quest3,2,32) $gettok(%quest3,3,32) $gettok(%quest3,5,32)
+    }
+  }
+
+  if ($numtok(%array,32) > 3) { 
+    echo -s Vi har FLERE quests! :D Kanskje vi har overlappende quests?
+  }
+
+  ; TODO - legge sammen der hvor det passer
+  ; TODO - hente data fra ini-fila istedenfor
 
   var %array Paladin Priest
   var %array.l 
@@ -97,7 +177,19 @@ alias quest {
 }
 
 alias winrate {
-  if (!$exists(data\winrate.txt)) { echo -s data\winrate.txt finnes ikke, lag en :) | return non-existant }
+
+  ; Linux fix
+  ; echo -s %winratetxt finnes ikke, lag en :) 
+  var %a $mircexe 
+  var %x $numtok(%a,92) 
+  var %s $gettok(%a,1 - [ $calc(%x - 1) ] , 92) 
+  var %b $chr(92) $+ data\winrate.txt 
+  var %s %s $+ %b 
+  var -s %true $exists(%s)
+  if (!%true) {
+    echo -s Finnes ikke, lag en data\winrate.txt
+    return non-existant 
+  }
 
   if ($window(@winrate)) { clear @winrate } | else { window @winrate }
   if ($window(@winrate2)) { clear @winrate2 } | else { window @winrate2 }
@@ -105,7 +197,7 @@ alias winrate {
   if ($window(@winrate4)) { clear @winrate4 } | else { window @winrate4 }
 
 
-  loadbuf @winrate data\winrate.txt
+  loadbuf @winrate %winratetxt
 
   echo -s $line(@winrate,0) linjer loadet til vindu @winrate
 
