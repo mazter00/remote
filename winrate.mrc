@@ -1,6 +1,9 @@
-; WinRate v0.008
+; WinRate v0.011
 ; For Hearthstone win tracking and champion choosing purposes
 
+; v0.011 08.05.2014 alias normal with quests works. I was considering 5+2 and give that more advantage, but fell down to a normal array.
+; v0.010 05.05.2014 Small fix for alias normal when quest is found, now list hero and place correctly.
+; v0.009 04.05.2014 23:44 Created alias pick, for choosing a hero in "hardcore winning mode". Selects randomly if two or more champs has equal score.
 ; v0.008 04.05.2014 Now finds quests and calulate only those heroes automatically. Remember to update the .ini-file.
 ; v0.007 03.05.2014 quest mode for alias normal works.
 ; v0.006 02.05.2014 22:32 Also gold and miniquest status
@@ -30,13 +33,14 @@ alias rarray {
 alias updatewinrateini {
   ; Updates the .ini file (not the record). It contains level of hero and number of class-cards.
 
-  ; Quest - updated manually. Type "Win X Class or Class". Number of minions killed etc doesn't count, we want to know class-spesific. "Win 3 Any" is okay.
-  var %quest1 Win 5 Priest Warlock
+  ; Quest - updated manually. Type "Win X Class or Class"
+  ; Number of minions killed etc doesn't count, we want to know class-spesific. "Win 3 Any" is okay.
+  var %quest1
   var %quest2 
   var %quest3
 
   ; Gold
-  var %gold 65
+  var %gold 90
 
   ; Progress in the miniquest (3 wins = 10 gold)
   ; N = N/3 wins
@@ -55,27 +59,27 @@ alias updatewinrateini {
 
 
     ; ===== LEVELS =====
-    writeini %winrateini Mage Level 23
-    writeini %winrateini Shaman Level 19
+    writeini %winrateini Mage Level 25
+    writeini %winrateini Shaman Level 20
     writeini %winrateini Druid Level 17
-    writeini %winrateini Paladin Level 24
-    writeini %winrateini Warlock Level 15
-    writeini %winrateini Hunter Level 20
-    writeini %winrateini Warrior Level 22
+    writeini %winrateini Paladin Level 26
+    writeini %winrateini Warlock Level 16
+    writeini %winrateini Hunter Level 21
+    writeini %winrateini Warrior Level 23
     writeini %winrateini Rogue Level 18
-    writeini %winrateini Priest Level 19
+    writeini %winrateini Priest Level 20
 
     ; ===== CARDS =====
     ; Open up "Collection" and manually look through each champ :/
     ; Ordering is fucked up as well
     ; 8 cards per full page
     writeini %winrateini Druid Cards 17
-    writeini %winrateini Hunter Cards 16
+    writeini %winrateini Hunter Cards 18
     writeini %winrateini Mage Cards 19
-    writeini %winrateini Paladin Cards 16
+    writeini %winrateini Paladin Cards 17
     writeini %winrateini Priest Cards 16
-    writeini %winrateini Rogue Cards 19
-    writeini %winrateini Shaman Cards 17
+    writeini %winrateini Rogue Cards 20
+    writeini %winrateini Shaman Cards 19
     writeini %winrateini Warlock Cards 18
     writeini %winrateini Warrior Cards 18
 
@@ -172,13 +176,20 @@ alias quest {
   if ($numtok(%array,32) > 3) { 
     echo -s Vi har FLERE quests! :D Kanskje vi har overlappende quests?
     echo -s TODO!
+
+    if ($numtok(%array,32) == 6) {
+      echo -s To quests funnet
+      var -s %array $gettok(%array,2-3,32) $gettok(%array,5-6,32)
+      return %array
+    }
+
     halt
   }
 
   ; TODO - legge sammen der hvor det passer
   ; TODO - hente data fra ini-fila istedenfor
 
-  var -s %array $gettok(%quest1,3,32) $gettok(%quest1,4,32)
+  var -s %array $gettok(%quest1,3,32) $gettok(%quest1,5,32)
   return %array
 
   var -s %a.sum $readini(%winrateini, $gettok(%quest1,3,32) , Sum) $readini(%winrateini, $gettok(%quest1,4,32) , Sum)
@@ -211,7 +222,6 @@ alias winrate {
   if ($window(@winrate3)) { clear @winrate3 } | else { window @winrate3 }
   if ($window(@winrate4)) { clear @winrate4 } | else { window @winrate4 }
 
-
   loadbuf @winrate %winratetxt
 
   echo -s $line(@winrate,0) linjer loadet til vindu @winrate
@@ -220,6 +230,8 @@ alias winrate {
   var %arrayT
   var %arrayW
   var %arrayL
+
+  if ($1 == 02) { wins02 }
 
   var %a 0
   var %x $numtok( [ %array ] , 32)
@@ -239,10 +251,9 @@ alias winrate {
     var -s %arrayL2 $replace( [ %arrayL ] ,$chr(32),$chr(43))
     var -s %arrayT2 $replace( [ %arrayT ] ,$chr(32),$chr(43))
 
-    var -s %kamper $line(@winrate,0)
-
     var -s %wins $calc(%arrayW2)
     var -s %tap $calc(%arrayL2)
+    var -s %kamper $calc(%arrayT2)
 
     var %winp $round($calc($calc(%wins / %kamper) * 100),3) $+ %
     var %tapp $round($calc($calc(%tap / %kamper) * 100),3) $+ %
@@ -299,7 +310,9 @@ alias winrate {
 }
 
 alias normal {
-  echo -s En mode for "play" mode hvis du ikke har quest og ikke har nok gold for en arena.
+  echo -s Let's find out the most effective way to play Hearthstone!
+
+  ; Quest, Arena (150 gold), BuyPack (0 gold AND won 30 games since 02am), PlayToWin, PlayForFun
 
   ; Check for active quests
 
@@ -308,15 +321,23 @@ alias normal {
   if (%quest) {
     echo -s Quest mode!
     var -s %array %quest
-
-    var -s %array.s $readini( [ %winrateini ] , [ $gettok( [ %array ] ,1,32) ] ,Sum) $readini( [ %winrateini ] , [ $gettok( [ %array ] ,2,32) ] ,Sum) 
-
     var %x $numtok( [ %array ] ,32)
 
-    var %mode 1
     var %a 0
-    goto q
+    :loop
+    inc %a
+    if (%a > %x) { var %a | var %mode 1 | goto q }
+
+    var %array.ss $readini( [ %winrateini ] , [ $gettok( [ %array ] , [ %a ] ,32) ] ,Sum)
+    var %array.s %array.s %array.ss
+    goto loop
+
   }
+
+  var %gold $readini( [ %winrateini ] ,Gold,Sum)
+  if (%gold >= 150) { echo -s Go do an Arena! type "/arena [Hero1] [Hero2] [Hero3]" and the script will give you an answer | return }
+
+
 
   ; Angi level og antall kort for champene - rarray = alle champs
   var %array $rarray
@@ -331,7 +352,9 @@ alias normal {
   goto loop3
 
   ; Formelen er (Level + Kort) + Winrate = Sum
-  ; 1 = vinne (velge mest-vinnende champ), 2 = level up (tilfeldig valg, større sum = større sjanse for å bli valgt)
+  ; Modes
+  ; 1 = vinne (velge mest-vinnende champ), 
+  ; 2 = level up (tilfeldig valg, større sum = større sjanse for å bli valgt)
   var %mode 1
 
   :q
@@ -389,6 +412,33 @@ alias normal {
 
   :pick
 
+  ; If we have 2/3 wins for the "miniquest", we go hardcore to get the last win. (highest score=pick)
+  ; Otherwise, pick a random hero (higher score=higher chance)
+
+  var -s %mini $readini(%winrateini,Miniquest,Miniquest)
+
+  if (%mini >= 2) {
+
+    var -s %pick $pick(%array.s2)
+    if ($numtok( [ %pick ] ,32) > 2) { 
+      echo -s Vi har flere heroes å velge mellom!
+      var %num $numtok( [ %pick ] ,32)
+      dec %num
+      var %r $rand(1, [ %num ] )
+      var -s %plass $gettok( [ %pick ] , [ $calc(%num + 1) ] , 32)
+      var -s %hero $gettok( [ %array ] , [ %plass ] ,32)
+      echo -s Velg hero %r som er plassering %plass som er hero %hero (hardcore winning mode fordi du har mindre enn 30 wins siden kl 02) multi-choice
+      echo -s Verdi: $gettok(%pick,1,32)
+      return
+      } | else {
+      var -s %plass $gettok( [ %pick ] ,2,32)
+      var -s %hero $gettok( [ %array ] , [ %plass ] ,32)
+      echo -s Velg hero %r som er plassering %plass som er hero %hero (hardcore winning mode fordi du har mindre enn 30 wins siden kl 02) single-hero
+      echo -s Verdi: $gettok(%pick,1,32)
+      return
+    }  
+  } 
+
   var %r $rand(1, [ %x ] )
   echo -s Picking mode! Vi skal velge et tall mellom 1 og %x og tallet ble... %r
   var %nummer
@@ -407,5 +457,45 @@ alias normal {
   goto a
 
 
+
+}
+
+alias pick {
+  if (!$1-) { echo -s Vennligst angi en array | return }
+
+  var %x $numtok($1-,32)
+
+  ; Finne det høyeste tallet og plassering, ev flere tall og plasseringer
+
+  var %a 0
+  :loop
+  inc %a
+  if (%a > %x) { echo -s Ferdig med loop, alias pick | return %max %plass }
+
+  var %b $gettok($1-, [ %a ] ,32)
+  if (!%max) { var -s %max %b | var -s %plass %a | goto loop }
+
+  if (%b < %max) { goto loop }
+  if (%b == %max) { var -s %plass %plass %a | goto loop }
+  if (%b > %max) { var -s %max %b | var %plass %a | goto loop }
+}
+
+alias wins02 {
+  ; Count number of wins since 02am
+
+  ; Let alias winrate load up the windows for us
+  var -s %lines $line(@winrate,0)
+  if (!%lines) { echo -s Let winrate load something for us into @winrate | winrate 02 }
+
+  filter -ww @winrate @winrate3 * W *
+  echo -s Det er nå $line(@winrate3,0) i vindu 3
+
+  filter -ww @winrate3 @winrate4 * $asctime(ddd mmm dd) *
+  echo -s $line(@winrate4,0) <- For i år...
+
+  filter -ww @winrate4 @winrate4 * $asctime(yyyy) *
+  var %ret $line(@winrate4,0)
+  echo -s Det er nå $line(@winrate4,0) i vindu 4 <- som er antall wins siden 02 i dag?
+  return %ret
 
 }
