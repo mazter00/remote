@@ -1,21 +1,49 @@
-=== Galaxelan-regler for Starcraft 2 ===
+=== Galaxelan-regler for Starcraft 2 2017 ===
 
-Signup: Du kan signe opp på turerningssiden vår (link kommer) eller si ifra i Discord-kanalen (link kommer) om at du vil delta. Ha klart bnet-nicket med nummer.
+Signup: Du kan signe opp pÃ¥ turerningssiden vÃ¥r (link kommer) eller si ifra i Discord-kanalen (link kommer) om at du vil delta. Ha klart bnet-nicket ditt med nummer. ("Nickname#1234")
 
-Turneringsstart: Når lyset slukkes første kveld
+Turneringsstart: NÃ¥r lyset slukkes fÃ¸rste kveld (fredag).
 
-Du *kan* oppøke mostanderen din så snart du har rigget deg i stand, men det er ingen forventninger at kamper blir spilt første kveld.
+Du *kan* oppÃ¸ke mostanderen din sÃ¥ snart du har rigget deg i stand, men det er ingen forventninger at kamper blir spilt fÃ¸rste kveld. Det er derimot forventninger at Starcraft-turneringen er den fÃ¸rste som blir fullfÃ¸rt.
 
-Ingen walkovers første dag.
+Ingen walkovers fÃ¸rste dag. Fra klokken 12:00 andre dag (lÃ¸rdag) sÃ¥ vil man purre pÃ¥ spillerne.
 
-Random rase er lov for hver kamp. Behøver ikke å oppgi hva man ble.
+Random rase er lov. BehÃ¸ver ikke Ã¥ oppgi i ingame chat om hva man ble. Derimot kan man ikke velge f.eks Terran i fÃ¸rste kamp og velge random i neste. Har man valgt rase, sÃ¥ fortsetter man med det ut turneringa. Har man valgt random rase, sÃ¥ kan du velge rase i f.eks neste kamp, men mÃ¥ sÃ¥ fortsette med den rasen ut turneringen.
+
+=== Map-pool ===
+
+Det som er gjeldende for S3 17. Disse er som fÃ¸lger;
+
+Abyssal Reef LE (2)
+Acolyte LE (2)
+Ascension to Aiur LE (2)
+Interloper LE (2)
+Mech Depot LE (2)
+Odyssey LE (2)
+Catallena LE (Void)
+
+Kilde: http://wiki.teamliquid.net/starcraft2/Maps/Ladder_Maps/Legacy_of_the_Void
+
+=== Veto ===
+
+Den som *Ã¸verst* i bracketen velger fÃ¸rst. Tre maps vetoes vekk. I finalen er det to vetoer, siden det er best of 5 og det er 7 maps.
+
+=== BM ===
+
+Absolutt ingen BM. Det er ikke sÃ¥ strengt som at kun "gg" og "wp" er lov, men i Ã¥r ser vi strengt pÃ¥ dette. I tvil, send replay til crew eller admin i Discord.
+
+=== Kampoppsett ===
+
+Best of 3 frem til finalen. BÃ¥de finalen i Winners brackets og Grand Final er finale, der hvor det spilles best of 5.
 
 Double elimination tournament. Lokal skrevet programvare blir brukt.
 
-Si i Discord hva resultatet ble. Det kan hende at brukeren selv kan legge inn resultater, men det var uvisst på nåværende tidspunkt.
+Si i Discord hva resultatet ble. Det kan hende at brukeren selv kan legge inn resultater pÃ¥ nettsida, men det var uvisst pÃ¥ nÃ¥vÃ¦rende tidspunkt.
 
-Map-pool: Det som er gjeldende. Vil bli oppdatert med navn.
+=== Pengepremier ===
 
-Veto: Den som øverst i brackten velger først.
+Ja.
 
-BM: Absolutt ingen BM. Det er ikke så strengt som at kun "gg" og "wp" er lov, men i år ser vi strengt på dette. I tvil, send replay til crew eller admin.
+=== Blir det streamet? ===
+
+Det er Ã¸kt fokus pÃ¥ streaming i Ã¥r, men ingen lovnader.
